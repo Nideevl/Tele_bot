@@ -4,6 +4,8 @@ import json
 import html
 import random
 import threading
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -25,18 +27,22 @@ if not BOT_TOKEN or not raw_chat_id:
 
 DEFAULT_CHAT_ID = int(raw_chat_id)
 
-# NOTE: "CN" has been renamed to "Networking" (must match the "topic" values in questions.json)
+# Topic names must match the "topic" values in questions.json
 ALL_TOPICS = ["OS", "Networking", "Cloud", "Java", "Spring", "OOPs", "DBMS", "SQL", "AI"]
 
 # Telegram hard limit for a single message
 TELEGRAM_MAX_LEN = 4096
 
-# Store user selections as a set (defaults to all topics enabled)
+# Quiet hours: no scheduled drills from QUIET_START (inclusive) to QUIET_END (exclusive)
+TZ = ZoneInfo(os.environ.get("BOT_TZ", "Asia/Kolkata"))
+QUIET_START = 2
+QUIET_END = 6
+
 user_preferences = {
     DEFAULT_CHAT_ID: set(ALL_TOPICS)
 }
 
-# Domain badges for a cleaner header visual
+# Domain badges for the question header
 TOPIC_BADGES = {
     "Java": "☕ JAVA",
     "Spring": "🍃 SPRING BOOT",
@@ -49,7 +55,40 @@ TOPIC_BADGES = {
     "AI": "🤖 AI & EMBEDDINGS",
 }
 
+# Short icons used in the topic picker
+TOPIC_ICONS = {
+    "OS": "💻",
+    "Networking": "🌐",
+    "Cloud": "☁️",
+    "Java": "☕",
+    "Spring": "🍃",
+    "OOPs": "🧱",
+    "DBMS": "🗄️",
+    "SQL": "📊",
+    "AI": "🤖",
+}
 
+
+# ---------------------------------------------------------------------------
+# Quiet hours helpers
+# ---------------------------------------------------------------------------
+def in_quiet_hours(dt: datetime) -> bool:
+    return QUIET_START <= dt.hour < QUIET_END
+
+
+def next_run_time() -> datetime:
+    """Random 45-90 min from now; if that lands in quiet hours, push to 6:00-6:30."""
+    candidate = datetime.now(TZ) + timedelta(seconds=random.randint(2700, 5400))
+    if in_quiet_hours(candidate):
+        candidate = candidate.replace(
+            hour=QUIET_END, minute=random.randint(0, 30), second=0, microsecond=0
+        )
+    return candidate
+
+
+# ---------------------------------------------------------------------------
+# Data
+# ---------------------------------------------------------------------------
 def load_questions():
     try:
         with open("questions.json", "r", encoding="utf-8") as f:
@@ -59,10 +98,38 @@ def load_questions():
         return []
 
 
+# ---------------------------------------------------------------------------
+# Topic picker UI
+# ---------------------------------------------------------------------------
+def build_topic_text(chat_id, footer):
+    selected = user_preferences.get(chat_id, set(ALL_TOPICS))
+    total = len(ALL_TOPICS)
+    count = len(selected)
+
+    bar = "🟩" * count + "⬜" * (total - count)
+
+    if count:
+        # keep ALL_TOPICS order for a stable display
+        chips = "  ".join(
+            f"{TOPIC_ICONS[t]} {t}" for t in ALL_TOPICS if t in selected
+        )
+    else:
+        chips = "⚠️ <i>Nothing selected — no questions will be sent</i>"
+
+    return (
+        f"🎛 <b>TOPIC CONTROL PANEL</b>\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"📡 <b>Active:</b> {count}/{total}\n"
+        f"{bar}\n\n"
+        f"{chips}\n\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"{footer}"
+    )
+
+
 def get_topic_keyboard(chat_id):
     selected_set = user_preferences.get(chat_id, set(ALL_TOPICS))
 
-    # 3x3 grid layout with checkbox indicators
     layout = [
         ["OS", "Networking", "Cloud"],
         ["Java", "Spring", "OOPs"],
@@ -73,39 +140,40 @@ def get_topic_keyboard(chat_id):
     for row in layout:
         row_buttons = []
         for topic in row:
-            is_active = topic in selected_set
-            prefix = "✅" if is_active else "⬜"
+            mark = "✅" if topic in selected_set else "▫️"
             row_buttons.append(
-                InlineKeyboardButton(f"{prefix} {topic}", callback_data=f"TOGGLE_{topic}")
+                InlineKeyboardButton(
+                    f"{mark} {TOPIC_ICONS[topic]} {topic}",
+                    callback_data=f"TOGGLE_{topic}",
+                )
             )
         keyboard.append(row_buttons)
 
-    # Control buttons rows
     keyboard.append([
-        InlineKeyboardButton("🌐 Select All", callback_data="ACTION_ALL"),
+        InlineKeyboardButton("✨ Select All", callback_data="ACTION_ALL"),
         InlineKeyboardButton("🧹 Clear All", callback_data="ACTION_CLEAR"),
     ])
     keyboard.append([
-        InlineKeyboardButton("💾 Done / Save", callback_data="ACTION_DONE"),
+        InlineKeyboardButton("💾 Save & Close", callback_data="ACTION_DONE"),
     ])
 
     return InlineKeyboardMarkup(keyboard)
 
 
+# ---------------------------------------------------------------------------
+# Message formatting
+# ---------------------------------------------------------------------------
 def clean_answer_markup(raw_text: str) -> str:
     """
-    Escapes raw HTML characters safely, then converts markdown `backticks`
-    into Telegram HTML <code> blocks.
+    Escapes HTML, then converts `backticks` into <b>bold</b>.
+    <code> is NOT used because Telegram cannot apply a spoiler to code entities,
+    which left those terms visible.
     """
     if not raw_text:
         return ""
 
-    # 1. Escape any rogue HTML characters (<, >, &)
     escaped = html.escape(raw_text, quote=False)
-
-    # 2. Convert `code` into <code>code</code>
-    formatted = re.sub(r"`([^`]+)`", r"<code>\1</code>", escaped)
-
+    formatted = re.sub(r"`([^`]+)`", r"<b>\1</b>", escaped)
     return formatted.strip()
 
 
@@ -118,7 +186,6 @@ def format_question_message(item):
     raw_question = html.escape(item.get("question", "").strip(), quote=False)
     formatted_answer = clean_answer_markup(item.get("answer", ""))
 
-    # Telegram HTML template with expandable blockquote + spoiler
     return (
         f"┏ 🏷️ <b>{badge}</b>{id_tag}\n"
         f"┃\n"
@@ -146,10 +213,6 @@ def format_question_plain(item):
 
 
 async def send_question(send_func, item):
-    """
-    Sends a question via the given send function (reply_text or bot.send_message wrapper).
-    Falls back to plain text if Telegram rejects the HTML (bad nesting, too long, etc.).
-    """
     msg = format_question_message(item)
     try:
         if len(msg) > TELEGRAM_MAX_LEN:
@@ -169,7 +232,6 @@ def pick_question(chat_id):
     if not active_topics:
         return None
 
-    # Filter question bank matching any of the chosen topics (case-insensitive)
     normalized_active = {t.lower() for t in active_topics}
     filtered = [q for q in questions if q.get("topic", "").lower() in normalized_active]
 
@@ -178,19 +240,20 @@ def pick_question(chat_id):
     return None
 
 
+# ---------------------------------------------------------------------------
+# Handlers
+# ---------------------------------------------------------------------------
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     if chat_id not in user_preferences:
         user_preferences[chat_id] = set(ALL_TOPICS)
 
-    current_tuple_str = ", ".join(sorted(user_preferences[chat_id])) or "None"
-    welcome_text = (
-        f"👋 <b>Interview Drill Bot Active</b>\n\n"
-        f"🎯 <b>Current Active Domains:</b>\n<code>({current_tuple_str})</code>\n\n"
-        f"Tap the buttons below to toggle multiple topics on/off:"
+    text = (
+        "👋 <b>Interview Drill Bot Active</b>\n\n"
+        + build_topic_text(chat_id, "Tap topics to toggle, then <b>Save &amp; Close</b>.")
     )
     await update.message.reply_text(
-        welcome_text, reply_markup=get_topic_keyboard(chat_id), parse_mode="HTML"
+        text, reply_markup=get_topic_keyboard(chat_id), parse_mode="HTML"
     )
 
 
@@ -199,10 +262,8 @@ async def topic_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat_id not in user_preferences:
         user_preferences[chat_id] = set(ALL_TOPICS)
 
-    current_tuple_str = ", ".join(sorted(user_preferences[chat_id])) or "None"
     await update.message.reply_text(
-        f"🎯 <b>Active Domains:</b>\n<code>({current_tuple_str})</code>\n\n"
-        f"Tap topics to toggle them in your active tuple:",
+        build_topic_text(chat_id, "Tap topics to toggle, then <b>Save &amp; Close</b>."),
         reply_markup=get_topic_keyboard(chat_id),
         parse_mode="HTML",
     )
@@ -238,26 +299,27 @@ async def handle_topic_callback(update: Update, context: ContextTypes.DEFAULT_TY
         await query.answer("Cleared all selections")
 
     elif data == "ACTION_DONE":
-        tuple_summary = ", ".join(sorted(current_set)) if current_set else "None"
         await query.answer("Saved!")
+        if current_set:
+            chips = "  ".join(f"{TOPIC_ICONS[t]} {t}" for t in ALL_TOPICS if t in current_set)
+        else:
+            chips = "⚠️ <i>None</i>"
         try:
             await query.edit_message_text(
-                f"✅ <b>Active Domain Tuple Saved!</b>\n\n"
-                f"📋 <b>Current Focus:</b> <code>({tuple_summary})</code>\n\n"
-                f"Questions will now be randomly picked from this selection.\n"
-                f"Use /ask for an immediate question or /topic to change again.",
+                f"✅ <b>SAVED</b>\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"📋 <b>Focus ({len(current_set)}/{len(ALL_TOPICS)}):</b>\n{chips}\n\n"
+                f"🕒 Drills arrive every 45-90 min (quiet 2 AM - 6 AM).\n"
+                f"Use /ask for an instant question or /topic to edit again.",
                 parse_mode="HTML",
             )
         except Exception:
             pass
         return
 
-    # Re-render keyboard with the updated checkboxes
-    current_tuple_str = ", ".join(sorted(current_set)) or "None selected"
     try:
         await query.edit_message_text(
-            f"🎯 <b>Active Domains:</b>\n<code>({current_tuple_str})</code>\n\n"
-            f"Tap topics to toggle them in your active tuple, then tap <b>Done / Save</b>:",
+            build_topic_text(chat_id, "Tap topics to toggle, then <b>Save &amp; Close</b>."),
             reply_markup=get_topic_keyboard(chat_id),
             parse_mode="HTML",
         )
@@ -286,23 +348,25 @@ async def ask_now(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def send_random_drill_job(context: ContextTypes.DEFAULT_TYPE):
     chat_id = DEFAULT_CHAT_ID
-    question_data = pick_question(chat_id)
 
-    if question_data:
-        async def _send(text, **kwargs):
-            return await context.bot.send_message(chat_id=chat_id, text=text, **kwargs)
+    # Skip sending during quiet hours (e.g. startup at 3 AM)
+    if not in_quiet_hours(datetime.now(TZ)):
+        question_data = pick_question(chat_id)
+        if question_data:
+            async def _send(text, **kwargs):
+                return await context.bot.send_message(chat_id=chat_id, text=text, **kwargs)
 
-        try:
-            await send_question(_send, question_data)
-        except Exception as e:
-            print(f"Failed to send scheduled drill: {e}")
+            try:
+                await send_question(_send, question_data)
+            except Exception as e:
+                print(f"Failed to send scheduled drill: {e}")
 
-    # Spaced intervals (45-90 minutes)
-    next_interval = random.randint(2700, 5400)
-    context.job_queue.run_once(send_random_drill_job, when=next_interval)
+    context.job_queue.run_once(send_random_drill_job, when=next_run_time())
 
 
-# Dummy health server for Render compatibility
+# ---------------------------------------------------------------------------
+# Health server (Render)
+# ---------------------------------------------------------------------------
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -329,7 +393,7 @@ def main():
     app.add_handler(CommandHandler("ask", ask_now))
     app.add_handler(CallbackQueryHandler(handle_topic_callback))
 
-    # Send first drill after 10 seconds of startup
+    # First drill 10 seconds after startup (skipped automatically in quiet hours)
     app.job_queue.run_once(send_random_drill_job, when=10)
 
     print("🚀 Bot is live with multi-topic tuple filtering...")
