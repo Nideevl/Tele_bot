@@ -1,0 +1,626 @@
+[
+  {
+    "id": 1,
+    "topic": "Java",
+    "question": "How does a HashMap work internally in Java?",
+    "answer": "1. Internal Structure:\n   - Uses an array of buckets (Node<K,V>[] table); default capacity is 16.\n   - Default load factor is 0.75 (doubles in size at 12 elements).\n\n2. Index Calculation:\n   - Computes key.hashCode().\n   - Calculates bucket index using: index = (n - 1) & hash.\n\n3. Collision Resolution:\n   - If empty: inserts new Node.\n   - If occupied (collision): traverses bucket chain:\n     - If key matches (equals() == true): replaces value.\n     - If key does not match: appends new node to the linked list.\n\n4. Java 8 Optimization:\n   - If bucket size reaches 8 (and total capacity >= 64), linked list converts to\n     a Red-Black Tree.\n   - Drops lookup time from O(n) to O(log n).\n\n5. Contract:\n   - hashCode() locates the bucket; equals() finds the exact key inside the bucket.\n   - Always override both together."
+  },
+  {
+    "id": 2,
+    "topic": "Java",
+    "question": "String and String Pool in Java",
+    "answer": "1. String Constant Pool (SCP):\n   - A dedicated memory area inside the regular Heap (Java 7+) to optimize memory.\n   - Reuses identical String literals so duplicate values share the same reference.\n\n2. Why String is Immutable:\n   - Memory Efficiency (The String Pool): Multiple variables with identical\n     literals share the same object in the pool; immutability ensures one\n     reference cannot alter the data for others.\n   - Security: Protects sensitive data (e.g., account details, network paths);\n     prevents modification after validation across methods or transactions.\n   - Thread Safety: Read-only state makes Strings inherently thread-safe to\n     read concurrently without synchronization risks.\n\n3. String s = \"abc\" vs String s = new String(\"abc\"):\n   - String s = \"abc\":\n     - Creates/reuses the literal directly in the SCP.\n     - Creates 0 or 1 object (0 if \"abc\" already exists in SCP).\n   - String s = new String(\"abc\"):\n     - Always creates a new object in the regular Heap, plus an entry in SCP if\n       not already present.\n     - Creates 1 or 2 objects."
+  },
+  {
+    "id": 3,
+    "topic": "Java",
+    "question": "What is the difference between Synchronous vs Asynchronous execution?",
+    "answer": "1. Synchronous (Blocking):\n   - The caller thread sends a request and blocks/waits until the response is received.\n   - Example: Traditional JDBC call where the thread halts until the DB returns rows.\n   - Trade-off: Simple control flow, but wastes CPU/thread capacity while waiting on I/O.\n\n2. Asynchronous (Non-blocking):\n   - The caller initiates a task, receives a handle (like a Future/Promise), and\n     immediately frees the thread to perform other work.\n   - Completion is handled via callbacks, polling, or event loops.\n   - Example: Sending an email notification in background via Spring @Async or a message queue.\n   - Trade-off: High throughput and scalability, but harder debugging and error handling."
+  },
+  {
+    "id": 4,
+    "topic": "OS",
+    "question": "What is the difference between Process vs Thread?",
+    "answer": "1. Process:\n   - An executing instance of a program with its own isolated memory space\n     (Heap, Stack, Code, Data).\n   - High overhead to create and switch contexts (requires OS kernel intervention).\n\n2. Thread:\n   - The smallest unit of execution within a process (often called a lightweight process).\n   - Shares the process's Heap, Code, and open file descriptors, but maintains its\n     own Stack and Program Counter (PC).\n   - Fast context switching, but requires synchronization to prevent race conditions\n     on shared heap data."
+  },
+  {
+    "id": 5,
+    "topic": "OS",
+    "question": "What is Deadlock and what are the 4 conditions required for it?",
+    "answer": "1. Definition:\n   - A situation where two or more threads are blocked forever, each waiting for\n     a resource/lock held by the other (e.g., Thread A holds Lock 1, wants Lock 2;\n     Thread B holds Lock 2, wants Lock 1).\n\n2. Coffman Conditions (All 4 must hold for deadlock to occur):\n   - Mutual Exclusion: Resources cannot be shared; only one thread can hold a resource.\n   - Hold and Wait: A thread holding at least one resource is waiting to acquire another.\n   - No Preemption: Resources cannot be forcibly taken away; they must be released voluntarily.\n   - Circular Wait: A closed chain of threads exists where each waits for a resource held\n     by the next member in the chain.\n\n3. Prevention/Fix:\n   - Lock Ordering: Always acquire multiple locks in the exact same global order across all threads.\n   - Lock Timeout: Use `tryLock(timeout)` instead of indefinite blocking (`synchronized`)."
+  },
+  {
+    "id": 6,
+    "topic": "DBMS",
+    "question": "How does Database Indexing work internally (B-Tree / B+ Tree)?",
+    "answer": "1. Purpose:\n   - Prevents full table scans O(N) by maintaining a sorted, balanced tree structure,\n     reducing disk page reads to O(log N).\n\n2. Why B+ Tree over Binary Search Tree:\n   - High Fan-Out (Multi-way branching): Each disk block holds hundreds of keys,\n     keeping tree height very low (typically 3 to 4 levels for millions of records).\n   - Fewer Disk I/O Operations: Since disk access is slow, shallow trees mean fewer page reads.\n\n3. Key B+ Tree Mechanics:\n   - Internal Nodes: Store only search keys and child pointers (routing traffic).\n   - Leaf Nodes: Store actual data pointers (or full rows) and are linked sequentially\n     via a doubly linked list, making range queries (`BETWEEN`, `>`, `<`) extremely fast."
+  },
+  {
+    "id": 7,
+    "topic": "DBMS",
+    "question": "What is the CAP Theorem and how does it apply to databases?",
+    "answer": "1. The 3 Pieces:\n   - Consistency (C): Everyone sees the exact same data at the same time.\n   - Availability (A): The system always answers your request, never throws an error.\n   - Partition Tolerance (P): The system still works even if the network cable breaks\n     between servers.(servers individually still keep working even though they are not\n     connected any more.\n\n2. The Real Choice:\n   - In real life, network cables WILL fail, so you MUST keep (P).\n   - Now choose only ONE:\n     - Pick C (Consistency): If servers cannot talk, reject the request so nobody\n       gets wrong/old data. (Example: Banking, SQL clusters).\n     - Pick A (Availability): Keep answering every user, even if the data is a bit\n       old/stale. (Example: Social media feed, Cassandra)."
+  },
+  {
+    "id": 8,
+    "topic": "DBMS",
+    "question": "What are ACID properties and what are Transaction Isolation Levels?",
+    "answer": "1. ACID Properties:\n   - Atomicity: All operations in a transaction succeed or all roll back (all-or-nothing).\n   - Consistency: Database moves only from one valid state to another, respecting all constraints.\n   - Isolation: Concurrent transactions execute without interfering with one another.\n   - Durability: Once committed, data changes survive system crashes or power failures.\n\n2. Concurrency Phenomena (Read Anomalies):\n   - Dirty Read: Reading uncommitted changes made by another concurrent transaction.\n   - Non-Repeatable Read: Re-reading the same row within a transaction returns different values\n     because another transaction committed an update.\n   - Phantom Read: Re-executing a range query returns newly inserted or deleted rows\n     committed by another transaction.\n\n3. The 4 Standard SQL Isolation Levels (Lowest to Highest):\n   - Read Uncommitted: Prevents nothing; allows Dirty, Non-repeatable, and Phantom reads.\n   - Read Committed: Prevents Dirty Reads only (default in PostgreSQL, Oracle, SQL Server).\n   - Repeatable Read: Prevents Dirty and Non-repeatable reads (default in MySQL InnoDB via MVCC).\n   - Serializable: Prevents all anomalies by enforcing strict serial execution or range locks;\n     lowest throughput."
+  },
+  {
+    "id": 9,
+    "topic": "DBMS",
+    "question": "What is the difference between Optimistic Locking vs Pessimistic Locking?",
+    "answer": "1. Pessimistic Locking:\n   - Principle: Assumes conflicts will happen; locks the target record at the database\n     level the moment it is read until the transaction finishes.\n   - Implementation: Uses `SELECT ... FOR UPDATE` in SQL.\n   - Best For: High-contention environments where conflicts are frequent (e.g., inventory\n     flash sales, banking fund transfers).\n   - Trade-off: Reduces throughput; risks deadlocks and thread starvation while holding locks.\n\n2. Optimistic Locking:\n   - Principle: Assumes conflicts are rare; does not lock records on read.\n   - Implementation: Adds a `version` (or timestamp) column to the table. On update:\n     `UPDATE table SET col = val, version = version + 1 WHERE id = 1 AND version = current_version;`\n     If rows updated == 0, a concurrent update occurred, and the transaction aborts/retries.\n   - Best For: Read-heavy applications with low write contention (e.g., editing user profiles).\n   - Trade-off: High retry overhead if write collisions suddenly spike."
+  },
+  {
+    "id": 10,
+    "topic": "Networking",
+    "question": "How do WebSockets differ from HTTP Polling, Long-Polling, and SSE?",
+    "answer": "1. Short Polling:\n   - Client sends periodic HTTP GET requests on a fixed interval (e.g., every 3s).\n   - Inefficient: High network overhead; most requests return empty payloads.\n\n2. Long Polling:\n   - Client requests data; server holds the HTTP connection open until new data arrives\n     or a timeout occurs. Once answered, client immediately reopens a new request.\n   - Better than short polling, but re-establishes TCP/TLS handshakes continuously.\n\n3. Server-Sent Events (SSE):\n   - Unidirectional (Server -> Client) persistent HTTP connection over standard HTTP/1.1 or HTTP/2.\n   - Best For: Live score feeds, stock tickers, or system notifications where the client\n     never needs to send data upstream over that same link.\n\n4. WebSockets:\n   - Full-duplex (bi-directional), persistent connection over a single TCP socket.\n   - Starts via an HTTP upgrade request (`Upgrade: websocket`), then switches to a lightweight\n     framing protocol.\n   - Best For: High-frequency, low-latency two-way interaction (e.g., multiplayer games,\n     collaborative document editing, live chat apps)."
+  },
+  {
+    "id": 11,
+    "topic": "Java",
+    "question": "Why do we need Garbage Collection and how does it work?",
+    "answer": "1. Why We Need It:\n   - Replaces manual memory allocation.\n   - Automatically tracks and deletes unused objects to prevent memory exhaustion\n     and application crashes.\n\n2. Reachability (How Java Chooses What to Delete):\n   - An object stays alive as long as an active reference points to it.\n   - Becomes eligible for GC when it becomes unreachable via:\n     * Variable going out of method scope.\n     * Variable reassigned to a new object.\n     * Explicitly setting the reference to null.\n\n3. Generational Working (Mark & Sweep):\n   - Young Generation: All new objects start here. A fast, frequent Minor GC\n     marks live objects and sweeps unreachable ones.\n   - Promotion: Objects surviving multiple Young Gen cycles move to Old Gen.\n   - Old Generation: Collected less frequently via Major GC since objects here\n     are proven to be long-lived."
+  },
+  {
+    "id": 12,
+    "topic": "Networking",
+    "question": "What is the difference between TCP and UDP, and how does the 3-Way Handshake work?",
+    "answer": "1. Core Differences:\n   - TCP (Transmission Control Protocol):\n     * Connection-oriented, reliable, ordered delivery.\n     * Includes error-checking, flow control (sliding window), and congestion\n       control.\n     * Use case: Web browsing (HTTP/HTTPS), file transfer, database connections.\n   - UDP (User Datagram Protocol):\n     * Connectionless, unreliable, unordered delivery (fire-and-forget).\n     * Minimal header overhead (8 bytes vs 20+ bytes in TCP) and zero handshake\n       latency.\n     * Use case: Live video streaming, DNS lookups, online multiplayer gaming, VoIP.\n\n2. TCP 3-Way Handshake (Establishing Connection):\n   - Step 1 (SYN): Client sends SYN packet with an Initial Sequence Number (ISN)\n     to Server.\n   - Step 2 (SYN-ACK): Server acknowledges with ACK (Client ISN + 1) and sends\n     its own SYN packet with its ISN.\n   - Step 3 (ACK): Client acknowledges Server's SYN (Server ISN + 1).\n     Connection is ESTABLISHED."
+  },
+  {
+    "id": 13,
+    "topic": "Cloud",
+    "question": "What is Redis and what are its common caching patterns?",
+    "answer": "1. What is Redis:\n   - In-memory, single-threaded (event loop based), key-value data structure store\n     used primarily as a low-latency cache, message broker, or session store.\n\n2. Core Caching Patterns:\n   - Cache-Aside (Lazy Loading):\n     * Read: Application checks Redis first. On cache hit, returns data. On cache miss,\n       reads from Database, writes result to Redis, then returns.\n     * Write: Application writes directly to the Database, then invalidates/evicts the\n       corresponding key in Redis.\n   - Write-Through:\n     * Application treats cache as the primary store; cache writes immediately to DB in\n       the same synchronous call.\n   - Write-Behind (Write-Back):\n     * Application writes directly to cache; cache batches writes to the Database\n       asynchronously.(High write throughput, but risks data loss on cache crash)."
+  },
+  {
+    "id": 14,
+    "topic": "DBMS",
+    "question": "What is Connection Pooling and why is it necessary?",
+    "answer": "1. The Problem:\n   - Establishing a new database connection for every request is extremely expensive:\n     * Requires OS-level socket creation, TCP 3-way handshake, TLS negotiation,\n       and database authentication/session setup.\n     * Repeated handshakes introduce latency and exhaust DB connection limits.\n\n2. The Solution:\n   - A connection pool (e.g., HikariCP in Java/Spring Boot) initializes and maintains\n     a set of warm, reusable database connections.\n   - When a thread needs to execute a query, it leases an existing connection from the\n     pool, runs the SQL, and returns it to the pool instead of closing it.\n\n3. Key Configuration Parameters:\n   - `maximumPoolSize`: Maximum allowed active connections (sized based on CPU cores\n      and disk I/O).\n   - `minimumIdle`: Minimum number of idle connections kept ready in reserve.\n   - `connectionTimeout`: Max time an application thread will wait for a leased\n      connection before failing."
+  },
+  {
+    "id": 15,
+    "topic": "Java",
+    "question": "What is OutOfMemoryError (OOM) and how do you troubleshoot it?",
+    "answer": "1. Root Cause:\n   - Thrown by the JVM when it cannot allocate an object because memory is\n     exhausted and Garbage Collection cannot free up any more space.\n\n2. Common Types:\n   - `java.lang.OutOfMemoryError: Java heap space`:\n     * Objects in Heap cannot be collected (memory leak or undersized heap).\n   - `java.lang.OutOfMemoryError: Metaspace`:\n     * Too many class metadata definitions loaded (excessive dynamic class generation).\n\n3. Troubleshooting Steps:\n   - Enable heap dumps on crash:\n     `-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/path/dump.hprof`\n   - Analyze heap dump with tools like Eclipse Memory Analyzer (MAT) or JProfiler\n     to inspect the Dominator Tree and find objects retaining memory.\n   - Inspect common leak sources: Unclosed database/network connections, static\n     collections continuously growing, or forgotten ThreadLocal variables."
+  },
+  {
+    "id": 16,
+    "topic": "Networking",
+    "question": "How does HTTPS / TLS work and what is the TLS Handshake?",
+    "answer": "1. Core Concept:\n   - HTTPS is HTTP over an encrypted TLS connection.\n   - Combines Asymmetric Encryption (for safe key exchange) and Symmetric\n     Encryption (for fast data transfer).\n\n2. Handshake Steps (Simplified):\n   - Client Hello: Client sends supported TLS versions and cipher suites.\n   - Server Hello & Certificate: Server replies with its chosen cipher and sends\n     its SSL/TLS Certificate (containing the Server's Public Key) signed by a trusted CA.\n   - Authentication: Client validates the certificate against its local trusted Root CAs.\n   - Key Exchange: Client generates a \"Pre-Master Secret\", encrypts it using the Server's\n     Public Key, and sends it to the Server.\n   - Symmetric Session Established: Both sides independently derive the exact same\n     Symmetric Session Key. All subsequent requests are encrypted symmetrically."
+  },
+  {
+    "id": 17,
+    "topic": "DBMS",
+    "question": "What is the difference between SQL and NoSQL databases?",
+    "answer": "1. SQL (Relational - e.g., PostgreSQL, MySQL):\n   - Schema: Strict, structured, predefined tabular schema.\n   - Scaling: Primarily vertical (bigger CPU/RAM); horizontal sharding is complex.\n   - Properties: Follows strict ACID guarantees; best for structured relations and\n     transactions.\n   - Best For: Banking, e-commerce orders, relational domain models.\n\n2. NoSQL (Non-Relational - e.g., MongoDB, Cassandra, DynamoDB):\n   - Schema: Dynamic, flexible schema (Document, Key-Value, Columnar, Graph).\n   - Scaling: Built for seamless horizontal scaling (distributing data across clusters).\n   - Properties: Follows BASE (Basically Available, Soft state, Eventual consistency).\n   - Best For: Unstructured/polymorphic payloads, high-throughput analytics, social\n     media feeds."
+  },
+  {
+    "id": 18,
+    "topic": "Spring",
+    "question": "What is the difference between Authentication vs Authorization, and how does JWT work?",
+    "answer": "1. Core Difference:\n   - Authentication (AuthN): \"Who are you?\" Verifies user identity (e.g., login credentials).\n   - Authorization (AuthZ): \"What are you allowed to do?\" Verifies permissions/roles (e.g.,\n     ADMIN vs USER).\n\n2. JWT (JSON Web Token) Structure:\n   - String composed of three Base64URL-encoded parts separated by dots:\n     `Header.Payload.Signature`\n     * Header: Algorithm and token type (e.g., `{\"alg\": \"HS256\", \"typ\": \"JWT\"}`).\n     * Payload: Claims/data (e.g., `userId`, `role`, expiration timestamp `exp`).\n     * Signature: `HMACSHA256(Base64(Header) + \".\" + Base64(Payload), secretKey)`.\n\n3. Why Stateless Auth:\n   - The server verifies the signature using its secret key without querying a database\n     or maintaining server-side session memory on every request."
+  },
+  {
+    "id": 19,
+    "topic": "Cloud",
+    "question": "What is Rate Limiting and what are its common algorithms?",
+    "answer": "1. Purpose:\n   - Protects APIs from abuse, DDoS attacks, and resource starvation by capping\n     the number of requests a client can make in a given timeframe.\n\n2. Core Algorithms:\n   - Token Bucket:\n     * Tokens refill at a constant rate up to a max capacity. Each request consumes\n       a token; if empty, the request is rejected (HTTP 429).\n     * Benefit: Allows short, controlled bursts of traffic.\n   - Leaky Bucket:\n     * Requests enter a queue and are processed at a constant, fixed rate (smooths\n       traffic out regardless of incoming spikes).\n   - Fixed Window Counter:\n     * Counts requests in fixed time windows (e.g., 100 req/minute).\n     * If all 100 requests arrive in the first 2 seconds, the server has to process all\n       100 at once, then sits idle for 58 seconds."
+  },
+  {
+    "id": 20,
+    "topic": "DBMS",
+    "question": "What is Database Sharding vs Partitioning vs Replication?",
+    "answer": "1. Replication:\n   - Copies the exact same database across multiple servers (e.g., 1 Primary, 2 Replicas).\n   - Writes go to the Primary; reads can be distributed to Replicas.\n\n2. Partitioning:\n   - Splits a large table into smaller, distinct sub-tables on the SAME database server\n     (e.g., partition orders table by year).\n   - Reduces query scan times and index size on a single machine.\n\n3. Sharding (Horizontal Partitioning across Nodes):\n   - Splits data rows across multiple separate database servers based on a rule:\n     * Example (Geographic):\n       - Server A stores all India users.\n       - Server B stores all US users.\n       - Server C stores all Europe users.\n   - Solves: Storage and write bottlenecks when one physical server runs out of disk/CPU.\n   - Trade-off: Querying across regions (e.g., global leaderboard) requires hitting\n     multiple servers over the network."
+  },
+  {
+    "id": 21,
+    "topic": "Cloud",
+    "question": "What is a Message Queue (e.g., Kafka, RabbitMQ) and why use it?",
+    "answer": "1. Core Benefits:\n   - Decoupling: Producers send messages without needing to know consumer status or implementation.\n   - Asynchronous Processing: Offloads slow tasks (e.g., sending emails, video processing)\n     so client requests return immediately.\n\n2. RabbitMQ vs Kafka (The Simple Difference):\n   - RabbitMQ (A Post Office):\n     * Server pushes messages directly to workers.\n     * Deletes the message as soon as a worker finishes it.\n     * Best for: Simple tasks, background jobs (e.g., sending emails/SMS).\n   - Kafka (A Recorded Tape / Diary):\n     * Server writes events to disk in order and never deletes them immediately.\n     * Workers pull data at their own speed and can rewind to re-read old data.\n     * Best for: Massive data streams, activity tracking, event history."
+  },
+  {
+    "id": 22,
+    "topic": "Cloud",
+    "question": "What is a Load Balancer and how does it work?",
+    "answer": "1. What It Does (Traffic Cop):\n   - Sits in front of your backend servers and shares incoming user traffic\n     so no single server gets overloaded or crashes.\n   - Constantly runs \"health checks\"—if Server 2 dies, it stops sending\n     requests there and routes them to healthy servers.\n\n2. How It Picks a Server (Common Rules):\n   - Round Robin: Takes turns in order (Server 1 -> Server 2 -> Server 3 -> repeat).\n   - Least Connections: Sends the user to whichever server is currently doing\n     the least amount of work."
+  },
+  {
+    "id": 23,
+    "topic": "Spring",
+    "question": "What is Spring Inversion of Control (IoC) and Dependency Injection (DI)?",
+    "answer": "1. Core Definition:\n   - IoC (Inversion of Control): In traditional Java, your code manually creates objects\n     using `new`. In Spring, control is inverted—the Spring container creates, configures,\n     and manages the lifecycle of your objects.\n   - DI (Dependency Injection): The design pattern used to implement IoC. Instead of a class\n     instantiating its dependencies inside the class, Spring injects them from the outside\n     (via constructor or `@Autowired`).\n\n2. Why We Use It:\n   - Loose Coupling: Classes do not depend on concrete implementations.\n   - Testability: Dependencies can be easily replaced with mock objects during unit testing."
+  },
+  {
+    "id": 24,
+    "topic": "Spring",
+    "question": "What are Spring Bean Scopes (Singleton vs Prototype)?",
+    "answer": "1. What is a Bean:\n   - Just a normal Java object that is managed and kept alive by the Spring IoC container.\n\n2. The 2 Main Scopes:\n   - Singleton (Default):\n     * Exactly ONE shared instance exists in the entire application.\n     * Every time a class asks for this Bean, Spring hands back the exact same instance.\n     * Warning: Must be stateless to prevent thread-safety bugs.\n   - Prototype:\n     * A BRAND NEW instance is created every single time it is requested from Spring.\n     * Best for: Stateful objects that hold data unique to a single operation.\n\n3. Web Scopes (Bonus):\n   - Request: One instance per incoming HTTP request.\n   - Session: One instance per user session (e.g., a user's shopping cart)."
+  },
+  {
+    "id": 25,
+    "topic": "Spring",
+    "question": "How does `@Transactional` work in Spring, and what is the rollback rule?",
+    "answer": "1. What It Does:\n   - Wraps a method in an ACID database transaction. All queries inside must succeed,\n     or everything rolls back (all-or-nothing).\n\n2. How It Works Under the Hood (AOP Proxy):\n   - Spring creates an invisible proxy wrapper around your class.\n   - When the method starts, the proxy opens a DB connection and disables auto-commit.\n   - If the method finishes cleanly, the proxy calls `commit()`.\n   - If an error occurs, the proxy calls `rollback()`.\n\n3. The #1 Interview Trap (The Rollback Rule):\n   - By default, Spring ONLY rolls back on **Unchecked Exceptions** (`RuntimeException` and `Error`).\n   - It will NOT roll back on **Checked Exceptions** (`Exception`, `IOException`) unless you\n     explicitly tell it to: `@Transactional(rollbackFor = Exception.class)`."
+  },
+  {
+    "id": 26,
+    "topic": "Cloud",
+    "question": "What is a CDN (Content Delivery Network) and how does it work?",
+    "answer": "1. What It Is (Local Corner Stores):\n   - A worldwide network of geographically distributed caching servers (Edge servers)\n     run by providers like Cloudflare or AWS CloudFront.\n\n2. How It Works:\n   - Without CDN: A user in Mumbai requests an image from a main server in New York.\n     The packet travels across the ocean, causing a slow 200ms+ delay.\n   - With CDN: The image is cached on a CDN edge server right in Mumbai. The user\n     downloads it locally in 10ms without bothering the New York server.\n\n3. What Gets Cached:\n   - Static assets: Images, videos, CSS, JavaScript bundles, and downloadable files.\n   - Saves bandwidth, protects the main backend from crashing under heavy traffic,\n     and drastically speeds up page loads."
+  },
+  {
+    "id": 27,
+    "topic": "Spring",
+    "question": "What is the difference between @Component, @Service, and @Repository in Spring?",
+    "answer": "1. Core Working:\n   - All three register the class as a Spring Bean in the IoC container.\n   - `@Service` and `@Repository` are specialized wrappers built on top of `@Component`.\n\n2. The Difference by Layer:\n   - `@Component`: General-purpose bean used for utilities and helpers.\n   - `@Service`: Marks business logic. Holds semantic meaning with no special technical behavior.\n   - `@Repository`: Marks the Data Access Layer (DAO).\n     * Special Feature: Exception Translation.\n     * It intercepts vendor-specific database errors (like MySQL, Postgres, or Hibernate\n       SQLExceptions) and translates them into Spring's unified, unchecked\n       `DataAccessException` hierarchy.\n     * Benefit: You can switch database vendors without having to rewrite error-handling\n       code in your business layer."
+  },
+  {
+    "id": 28,
+    "topic": "Spring",
+    "question": "Why is Constructor Injection preferred over Field Injection (`@Autowired`)?",
+    "answer": "1. Core Reasons:\n   - Immutability: Dependencies can be declared `final`, ensuring they are set at creation\n     and never altered later.\n   - Easy Testing: You can instantiate the class in a plain unit test using `new Service(mockRepo)`\n     without starting a slow Spring container or using reflection.\n   - Prevents NullPointerExceptions: Makes it impossible to create an object in an invalid,\n     half-initialized state without its required dependencies.\n   - Circular Dependency Detection: Catches circular loops immediately at application startup\n     rather than failing unpredictably at runtime."
+  },
+  {
+    "id": 29,
+    "topic": "Cloud",
+    "question": "What is the difference between Monolithic vs Microservices Architecture?",
+    "answer": "1. Monolith:\n   - All modules (Auth, Payments, Inventory) packaged and deployed together as a single binary\n     /WAR.\n   - Pros: Simple to develop, deploy, test, and debug locally; zero network call latency between\n           modules.\n   - Cons: Whole system must scale together; a crash in one module can take down the entire\n           application.\n\n2. Microservices:\n   - Application broken into independent, loosely coupled services communicating via REST or\n     Message Queues.\n   - Pros: Independent deployment cycles; each service can scale and use different tech stacks.\n   - Cons: High operational complexity; requires distributed tracing, network resilience, and\n           eventual consistency."
+  },
+  {
+    "id": 30,
+    "topic": "Cloud",
+    "question": "What is the Circuit Breaker pattern (e.g., Resilience4j)?",
+    "answer": "1. Purpose:\n   - Prevents a failing downstream service from taking down your entire system by failing fast\n     instead of letting threads hang and starve system resources.\n\n2. The 3 States:\n   - Closed (Normal): Requests pass through as usual.\n   - Open (Tripped): When the failure threshold is crossed, requests fail immediately without\n     even trying to call the downstream service. Returns a quick fallback response.\n   - Half-Open (Testing): After a cooldown timeout, allows a small batch of trial requests through\n     to see if the downstream service has recovered."
+  },
+  {
+    "id": 31,
+    "topic": "Networking",
+    "question": "What makes an HTTP method Idempotent, and what is PUT vs PATCH?",
+    "answer": "1. What is Idempotency:\n   - An operation is idempotent if making the exact same request 1 time or 100 times\n     leaves the server in the exact same final state.\n   - Idempotent: GET, PUT, DELETE, HEAD.\n   - NOT Idempotent: POST (calling it 5 times creates 5 new records).\n\n2. PUT vs PATCH:\n   - PUT (Complete Replacement): Replaces the entire resource. You must send all fields;\n     any omitted field is typically set to null or default. (Idempotent).\n   - PATCH (Partial Update): Modifies only the specific fields sent in the request body,\n     leaving the rest untouched. (Usually non-idempotent by specification)."
+  },
+  {
+    "id": 32,
+    "topic": "Spring",
+    "question": "How do you handle exceptions globally in Spring Boot?",
+    "answer": "1. The Core Pattern (`@ControllerAdvice` + `@ExceptionHandler`):\n   - Instead of messy `try-catch` blocks inside every controller, you define a single\n     centralized error-handling class.\n   - Annotated with `@RestControllerAdvice` (or `@ControllerAdvice`).\n\n2. How It Works:\n   - Inside this class, write methods annotated with `@ExceptionHandler(YourException.class)`.\n   - When any controller throws that exception, Spring catches it globally and formats\n     a clean, consistent JSON error payload with the proper HTTP status code (e.g., 404, 400)."
+  },
+  {
+    "id": 33,
+    "topic": "Spring",
+    "question": "What is Spring Boot Auto-Configuration and how does it work?",
+    "answer": "1. The Problem It Solves:\n   - In traditional Spring, you had to manually write hundreds of lines of XML or Java config\n     to connect a database, set up a web server, or configure Jackson JSON.\n\n2. How Auto-Configuration Works:\n   - Driven by `@EnableAutoConfiguration` (included inside `@SpringBootApplication`).\n   - Looks at your classpath dependencies (JARs) and automatically configures standard beans.\n     * Example: If `hikaricp` and `postgresql` are on the classpath, Spring automatically\n       creates a DataSource bean for you."
+  },
+  {
+    "id": 34,
+    "topic": "Spring",
+    "question": "What is the N+1 Problem in Hibernate/JPA, and how do you fix it?",
+    "answer": "1. The Problem (Accidental Query Storm):\n   - You fetch 100 users, and each user has a list of orders.\n   - Hibernate runs 1 query to get the 100 users:\n     `SELECT * FROM users;`\n   - Then, as you loop through them, it fires 1 separate query for EACH user's orders:\n     `SELECT * FROM orders WHERE user_id = ?;` (100 extra queries).\n   - Result: 1 + 100 = 101 database queries instead of just 1.\n\n2. How to Fix It:\n   - Use a JOIN FETCH in your JPQL/HQL query:\n     `SELECT u FROM User u JOIN FETCH u.orders;`\n   - This pulls users and their orders together in a single SQL query using an inner/left join."
+  },
+  {
+    "id": 35,
+    "topic": "Spring",
+    "question": "What is the Spring MVC Request Lifecycle (What happens when an HTTP request hits)?",
+    "answer": "1. The Flow (Front Controller Pattern):\n   - Step 1: The request hits `DispatcherServlet` (the front door of Spring MVC).\n   - Step 2: `DispatcherServlet` asks `HandlerMapping` which Controller method handles this URL.\n   - Step 3: It calls `HandlerAdapter`, which executes your actual `@RestController` code.\n   - Step 4: Your method returns the Java object.\n   - Step 5: `HttpMessageConverter` (Jackson) serializes that Java object into JSON and sends\n     it back as the HTTP response."
+  },
+  {
+    "id": 36,
+    "topic": "OOPs",
+    "question": "What is the difference between an Interface and an Abstract Class in Java?",
+    "answer": "1. Core Difference:\n   - Interface: Defines a CONTRACT (\"what it can do\").\n     * A class can implement multiple interfaces (multiple inheritance of type).\n     * Cannot hold instance state/variables (only `public static final` constants).\n   - Abstract Class: Defines an IDENTITY or BASE BLUEPRINT (\"what it is\").\n     * A class can extend only ONE abstract class.\n     * Can have constructors, instance fields (state), and shared concrete code.\n\n2. Interview Rule of Thumb:\n   - Use an Abstract Class when classes share common state/code and have a strict\n     \"is-a\" relationship (e.g., `Dog is an Animal`).\n   - Use an Interface when unrelated classes share common behavior (e.g., `Document`\n     and `Image` can both implement `Printable`)."
+  },
+  {
+    "id": 37,
+    "topic": "OOPs",
+    "question": "What is the difference between Method Overloading vs Overriding?",
+    "answer": "1. Overloading (Compile-time Polymorphism):\n   - Same method name, DIFFERENT parameters (number, types, or order) in the same class.\n   - Decided by the compiler at compile time based on the argument reference types.\n   - Return type does not matter (changing only the return type is a compile error).\n\n2. Overriding (Runtime Polymorphism):\n   - A subclass provides its own specific implementation of a method already defined in its parent\n     class.\n   - Must have the EXACT same name, return type, and parameter list.\n   - Decided at runtime by the JVM based on the actual object created in memory (`new Dog()`)."
+  },
+  {
+    "id": 38,
+    "topic": "Java",
+    "question": "What is the difference between Checked vs Unchecked Exceptions in Java?",
+    "answer": "1. Checked Exceptions:\n   - Checked at compile time; the code will not compile unless you handle them\n     via `try-catch` or declare them using `throws`.\n   - Inherit directly from `Exception` (excluding `RuntimeException`).\n   - Represents recoverable scenarios outside the app's direct control.\n     * Examples: `IOException`, `SQLException`, `FileNotFoundException`.\n\n2. Unchecked Exceptions:\n   - Occur at runtime; the compiler does not force you to catch or declare them.\n   - Inherit from `RuntimeException` or `Error`.\n   - Represents programming bugs or logical errors that should be fixed in code.\n     * Examples: `NullPointerException`, `ArrayIndexOutOfBoundsException`, `IllegalArgumentException`."
+  },
+  {
+    "id": 39,
+    "topic": "Java",
+    "question": "What is the difference between `ArrayList` and `LinkedList` in Java?",
+    "answer": "1. Internal Structure:\n   - `ArrayList`: Backed by a resizable, contiguous dynamic array.\n   - `LinkedList`: Backed by a doubly linked list of node objects.\n\n2. Performance Comparison:\n   - Random Access by Index (`get(i)`):\n     * `ArrayList` is O(1) because elements are indexed directly in memory.\n     * `LinkedList` is O(N) because it must traverse pointers from head or tail.\n   - Insert/Delete at Head/Middle:\n     * `ArrayList` is O(N) because subsequent elements must shift memory slots.\n     * `LinkedList` is O(1) for node rewiring once the target node is located.\n\n3. Real-World Choice:\n   - `ArrayList` is almost always preferred due to CPU cache locality; `LinkedList`\n     has high pointer overhead and causes cache misses."
+  },
+  {
+    "id": 40,
+    "topic": "Java",
+    "question": "What is the difference between `==` and `.equals()`, and how does `.equals()` relate to `.hashCode()`?",
+    "answer": "1. `==` vs `.equals()`:\n   - `==`: Compares memory addresses (references) to check if both variables point\n     to the exact same object on the heap.\n   - `.equals()`: A method that evaluates value or logical equality (can be overridden\n     to compare internal fields).\n\n2. The equals & hashCode Contract:\n   - If two objects are equal according to `.equals()`, they MUST produce the exact\n     same integer result from `.hashCode()`.\n   - If two objects have the same hash code, they are NOT necessarily equal (a collision).\n   - Consequence: Breaking this contract breaks hash-based collections (`HashMap`, `HashSet`),\n     making stored objects unretrievable."
+  },
+  {
+    "id": 41,
+    "topic": "Java",
+    "question": "What is the difference between `final`, `finally`, and `finalize` in Java?",
+    "answer": "1. `final` (Keyword / Restriction):\n   - Variable: Value becomes constant and cannot be reassigned.\n   - Method: Cannot be overridden by subclasses.\n   - Class: Cannot be extended/inherited (e.g., `String`, `Integer`).\n\n2. `finally` (Control Flow / Cleanup):\n   - A block attached to `try-catch` that always executes regardless of whether an\n     exception was thrown or caught.\n   - Used for releasing resources (closing file descriptors, DB connections).\n   - Only skipped if the JVM exits abruptly via `System.exit(0)` or a JVM crash.\n\n3. `finalize` (Deprecated Method):\n   - A method on `Object` called by GC before destroying an object.\n   - Unreliable and deprecated since Java 9; do not use it for cleanup."
+  },
+  {
+    "id": 42,
+    "topic": "Java",
+    "question": "What is the difference between `Comparable` and `Comparator` in Java?",
+    "answer": "1. `Comparable` (Natural Ordering):\n   - Defined inside the class itself by implementing `Comparable<T>` and overriding `compareTo()`.\n   - Modifies the original class; provides a single default sorting logic (e.g., sorting by ID).\n   - Usage: `Collections.sort(list)` uses this automatically.\n\n2. `Comparator` (Custom / Multiple Ordering):\n   - Defined outside the class in a separate class or via a lambda/method reference.\n   - Overrides `compare(T o1, T o2)`.\n   - Does not touch the original class; lets you sort by multiple criteria on demand\n     (e.g., sort by price today, sort by name tomorrow).\n   - Usage: `list.sort(Comparator.comparing(Product::getPrice))`."
+  },
+  {
+    "id": 43,
+    "topic": "Java",
+    "question": "What is the Java Memory Model (Heap vs Stack)?",
+    "answer": "1. Stack Memory:\n   - Scope: Private to each thread; other threads cannot access it.\n   - Stores: Local primitive variables and object references (memory pointers).\n   - Lifecycle: Cleared automatically as soon as a method execution finishes (LIFO order).\n   - Error on limit: `StackOverflowError` (e.g., infinite recursion).\n\n2. Heap Memory:\n   - Scope: Shared across the entire application and all running threads.\n   - Stores: The actual objects (`new Object()`) and class metadata/strings.\n   - Lifecycle: Managed and cleaned only by the Garbage Collector when unreachable.\n   - Error on limit: `OutOfMemoryError: Java heap space`."
+  },
+  {
+    "id": 44,
+    "topic": "OOPs",
+    "question": "What are the 4 main OOP principles and how do you explain them simply?",
+    "answer": "1. Encapsulation:\n   - Bundling data and methods into a single class while keeping fields `private`\n     and exposing safe public getters/setters. Prevents direct unauthorized manipulation.\n\n2. Abstraction:\n   - Hiding internal implementation complexity and showing only essential features\n     to the caller (implemented using `abstract class` and `interface`).\n\n3. Inheritance:\n   - Mechanism where a child class acquires fields and methods of a parent class\n     using `extends` to promote code reuse (\"is-a\" relationship).\n\n4. Polymorphism:\n   - Ability for a common message or method call to behave differently based on the object:\n     * Compile-time (Overloading): Same method name, different parameters.\n     * Runtime (Overriding): Subclass provides its own implementation of a parent method."
+  },
+  {
+    "id": 45,
+    "topic": "Java",
+    "question": "What is the difference between `fail-fast` and `fail-safe` Iterators in Java?",
+    "answer": "1. Fail-Fast Iterators:\n   - Principle: Operates directly on the underlying collection collection data.\n   - Behavior: If the collection is modified (added/removed) while iterating—except via the\n     iterator's own `remove()` method—it immediately throws `ConcurrentModificationException`.\n   - Examples: Iterators of standard collections like `ArrayList`, `HashSet`, `HashMap`.\n\n2. Fail-Safe (Non-Failing) Iterators:\n   - Principle: Operates on a cloned copy of the collection instead of the original data.\n   - Behavior: Modifying the collection during iteration does NOT throw an exception,\n     though it might not reflect real-time updates.\n   - Examples: Concurrent collections like `CopyOnWriteArrayList`, `ConcurrentHashMap`."
+  },
+  {
+    "id": 46,
+    "topic": "Java",
+    "question": "How does a ThreadPool work in Java, and why use `ExecutorService` instead of `new Thread()`?",
+    "answer": "1. The Problem with `new Thread()`:\n   - Creating an OS thread is expensive (allocates 1MB stack memory and requires OS context switching).\n   - Uncontrolled creation can crash the JVM with `OutOfMemoryError: unable to create new native thread`.\n\n2. How ThreadPool Works:\n   - Maintains a fixed set of pre-warmed worker threads waiting for work.\n   - When a task arrives via `execute()`, it goes into an internal blocking queue.\n   - Idle threads pull tasks from the queue, run them, and return to the pool instead of dying.\n\n3. Core Tuning Parameters (`ThreadPoolExecutor`):\n   - `corePoolSize`: Minimum threads kept alive.\n   - `maximumPoolSize`: Maximum threads allowed during heavy traffic.\n   - `workQueue`: Holds tasks waiting for an available thread (e.g., `ArrayBlockingQueue`)."
+  },
+  {
+    "id": 47,
+    "topic": "Java",
+    "question": "What is the difference between `volatile` and `synchronized` in Java?",
+    "answer": "1. `volatile` (Visibility Only):\n   - Tells the JVM never to cache that variable in CPU registers/caches.\n   - Every read and write goes directly to main RAM, ensuring all threads see updates immediately.\n   - Does NOT provide atomicity (e.g., `count++` is not safe because read-modify-write can clash).\n\n2. `synchronized` (Visibility + Atomicity):\n   - Acquires an exclusive monitor lock on an object before running the code block.\n   - Only one thread can execute inside the locked block at a time.\n   - Guarantees both visibility (flushes to RAM) and mutual exclusion (thread-safe updates)."
+  },
+  {
+    "id": 48,
+    "topic": "Spring",
+    "question": "How does Spring Security authenticate a request (The Filter Chain Flow)?",
+    "answer": "1. The Architecture:\n   - Spring Security sits entirely in front of Spring MVC as a chain of servlet filters\n     (`SecurityFilterChain`).\n\n2. The Request Flow:\n   - Step 1: Request hits `SecurityFilterChain` before reaching `DispatcherServlet`.\n   - Step 2: An authentication filter (e.g., your custom JWT filter) extracts credentials/token\n     from headers.\n   - Step 3: Passes token to `AuthenticationManager`, which validates it against credentials/database.\n   - Step 4: If valid, creates an `Authentication` object and stores it in `SecurityContextHolder`.\n   - Step 5: Downstream controllers read user identity directly from `SecurityContextHolder`."
+  },
+  {
+    "id": 49,
+    "topic": "OS",
+    "question": "What is Virtual Memory and Paging in an Operating System?",
+    "answer": "1. Virtual Memory:\n   - A memory management trick where the OS gives each process an illusion of having\n     its own continuous, massive block of RAM, even if physical RAM is small and fragmented.\n\n2. Paging & Page Tables:\n   - Virtual memory is split into fixed-size chunks called **Pages** (typically 4KB).\n   - Physical RAM is split into chunks of the same size called **Frames**.\n   - The OS uses a **Page Table** to map virtual pages to actual physical frames.\n\n3. Page Fault:\n   - When a program accesses a page that is stored on disk instead of physical RAM,\n     the OS pauses the thread, swaps the page from disk into RAM, and then resumes execution."
+  },
+  {
+    "id": 50,
+    "topic": "Java",
+    "question": "How does ConcurrentHashMap work internally in Java?",
+    "answer": "1. Structure (Java 8+):\n   - Backed by an array of Node buckets, similar to a standard HashMap.\n   - Replaced Java 7's Segment-based locking with fine-grained, bucket-level locking.\n\n2. Reads vs Writes:\n   - Reads (get()): Completely lock-free. Relies on volatile node value references\n     to guarantee immediate visibility across threads.\n   - Writes (put()):\n     - If the target bucket is empty, inserts the node using a lock-free CAS (Compare-And-Swap).\n     - If occupied (collision), locks ONLY the head node of that single bucket using synchronized.\n       Other buckets remain fully accessible for concurrent writes.\n\n3. Advantage:\n   - High concurrent throughput; eliminates the global map-wide lock used by Hashtable\n     or Collections.synchronizedMap()."
+  },
+  {
+    "id": 51,
+    "topic": "Java",
+    "question": "What is the Java Stream API and how does it work under the hood?",
+    "answer": "1. Core Definition:\n   - A sequence of elements supporting functional-style aggregate operations (map, filter, reduce)\n     without mutating the underlying source collection.\n\n2. Pipeline Architecture:\n   - Intermediate Operations: Lazy evaluation. Calls like .filter() and .map() return a new\n     Stream and execute zero code until a terminal operation is called.\n   - Terminal Operations: Eager execution. Calls like .collect(), .forEach(), or .count()\n     trigger processing and consume the stream. A stream cannot be reused once closed.\n\n3. Optimization:\n   - Loop Fusion: Fuses multiple operations into a single pass per element instead of looping\n     over the entire collection repeatedly.\n   - Short-Circuiting: Operations like .findFirst() or .limit() stop processing immediately\n     once the condition is satisfied."
+  },
+  {
+    "id": 52,
+    "topic": "Java",
+    "question": "What is the difference between @Async and CompletableFuture in Java?",
+    "answer": "1. @Async (Spring Framework):\n   - Principle: Annotation-driven async execution managed by Spring via an AOP proxy.\n   - Usage: Fire-and-forget background tasks (e.g., sending an email or audit event).\n   - Limitation: Difficult to compose, chain, or combine results across multiple tasks cleanly.\n\n2. CompletableFuture (Java 8 Core Concurrency):\n   - Principle: Programmatic, non-blocking asynchronous programming tool.\n   - Usage: Ideal for running parallel independent network/database calls and aggregating\n     their results.\n   - Key Methods:\n     - supplyAsync(): Initiates the asynchronous task.\n     - thenApply() / thenCompose(): Chains sequential dependent operations.\n     - allOf(): Waits for multiple parallel futures to finish before combining results."
+  },
+  {
+    "id": 53,
+    "topic": "OOPs",
+    "question": "What are the SOLID Principles in Object-Oriented Design?",
+    "answer": "1. Single Responsibility Principle (S):\n   - A class should have only one reason to change (e.g., separate invoice calculation\n     from invoice PDF generation).\n\n2. Open/Closed Principle (O):\n   - Classes should be open for extension, but closed for modification (add new features\n     by extending or implementing interfaces rather than changing working production code).\n\n3. Liskov Substitution Principle (L):\n   - Subtypes must be substitutable for their base types without breaking application behavior\n     (derived classes must honor the contracts of their parents).\n\n4. Interface Segregation Principle (I):\n   - Clients should not be forced to depend on interfaces they do not use (prefer many\n     small, specific interfaces over one bloated interface).\n\n5. Dependency Inversion Principle (D):\n   - High-level modules should depend on abstractions (interfaces), not concrete implementations\n     (the foundational principle behind Spring Dependency Injection)."
+  },
+  {
+    "id": 54,
+    "topic": "Networking",
+    "question": "What is the OSI Model and how does data flow through its layers?",
+    "answer": "1. The 7 Layers (Top to Bottom):\n   - Layer 7 (Application): Where network apps live (HTTP, HTTPS, FTP, DNS, SSH).\n   - Layer 6 (Presentation): Data translation, compression, and encryption/decryption (TLS/SSL).\n   - Layer 5 (Session): Manages sessions and connection state between applications.\n   - Layer 4 (Transport): End-to-end data delivery, segmentation, and reliability (TCP, UDP).\n   - Layer 3 (Network): Routing packets across different networks using logical IPs (Routers).\n   - Layer 2 (Data Link): Framing and hop-to-hop data transfer using physical MAC addresses (Switches).\n   - Layer 1 (Physical): Raw binary transmission over cables, radio frequencies, or fiber optics.\n\n2. Data Encapsulation & Decapsulation:\n   - Sending: Data moves down (7 -> 1). Each layer wraps the payload with its own header:\n     Data -> Segment (L4) -> Packet (L3) -> Frame (L2) -> Bits (L1).\n   - Receiving: Bits move up (1 -> 7), each layer strips its corresponding header until\n     raw application data reaches the destination app."
+  },
+  {
+    "id": 55,
+    "topic": "Networking",
+    "question": "What is the difference between CORS and CSRF, and how do you protect against them?",
+    "answer": "1. CORS (Cross-Origin Resource Sharing):\n   - Principle: A browser security mechanism that restricts web pages from requesting\n     resources from a different origin (domain, protocol, or port).\n   - Working: For non-simple requests (e.g., `PUT`, `DELETE`, or custom headers), the browser\n     fires a preflight `OPTIONS` request. The server replies with headers like\n     `Access-Control-Allow-Origin: https://trusted.com`. If matched, the actual request proceeds.\n   - Configuration in Spring: Handled via `@CrossOrigin` or `CorsConfigurationSource`.\n\n2. CSRF (Cross-Site Request Forgery):\n   - Principle: An attacker tricks an authenticated user's browser into executing an unauthorized\n     action on a trusted site where the user is already logged in (via ambient session cookies).\n   - Prevention:\n     * CSRF Tokens: Server generates a unique, unpredictable cryptographic token on render;\n       every state-changing request (POST/PUT/DELETE) must submit this token in a header.\n     * SameSite Cookies: Set session cookies to `SameSite=Strict`(nothing allowed) or `SameSite=Lax`\n       (only things like GET allowed).\n   - In Stateless APIs: If your backend uses stateless JWTs sent via `Authorization: Bearer <token>`\n     headers instead of cookies, CSRF protection can safely be disabled (`csrf.disable()`)."
+  },
+  {
+    "id": 57,
+    "topic": "OOPs",
+    "question": "What are the most common Design Patterns used in Java and Spring?",
+    "answer": "1. Creational Patterns:\n   - Singleton Pattern:\n     * Ensures a class has only one instance and provides a global access point to it.\n     * In Java: Private constructor + static instance getter (double-checked locking).\n     * In Spring: The default scope of all managed beans in the IoC container.\n   - Factory Pattern:\n     * Defines an interface for creating objects, delegating instantiation logic to subclasses.\n     * In Spring: `BeanFactory` and `ApplicationContext`.\n   - Builder Pattern:\n     * Constructs complex objects step-by-step, avoiding telescoping constructors.\n     * In Java: Implemented manually or via Lombok's `@Builder`.\n\n2. Structural & Behavioral Patterns:\n   - Proxy Pattern:\n     * Provides a placeholder/wrapper to control access to the target object.\n     * In Spring: Underpins Spring AOP for `@Transactional`, `@Async`, and `@Secured`.\n   - Strategy Pattern:\n     * Encapsulates interchangeable algorithms inside separate classes implementing a shared interface.\n     * In Spring: Spring can inject all implementations into a `Map<String, StrategyInterface>`,\n       letting you pick strategies dynamically at runtime based on input."
+  },
+  {
+    "id": 58,
+    "topic": "Java",
+    "question": "What is the Java Thread Lifecycle and State Transitions?",
+    "answer": "1. The 6 Thread States (java.lang.Thread.State):\n   - NEW: Thread instance is created (`new Thread()`) but `start()` has not been called yet.\n   - RUNNABLE: Executing in the JVM or waiting for OS resource allocation (CPU scheduling).\n   - BLOCKED: Waiting to acquire a monitor lock to enter/re-enter a `synchronized` block/method.\n   - WAITING: Waiting indefinitely for another thread to perform a specific action without\n     timeout (`Object.wait()`, `Thread.join()`, `LockSupport.park()`).\n   - TIMED_WAITING: Waiting for another thread for a specified waiting time\n     (`Thread.sleep(ms)`, `Object.wait(ms)`, `LockSupport.parkNanos()`).\n   - TERMINATED: Thread has finished running its `run()` method or exited via an unhandled exception.\n\n2. Critical Interview Distinction:\n   - BLOCKED vs WAITING: BLOCKED specifically waits to acquire an intrinsic monitor lock held by\n     another thread via `synchronized`. WAITING is voluntary suspension waiting for a signal\n     (e.g., `notify()` / `notifyAll()`)."
+  },
+  {
+    "id": 59,
+    "topic": "Spring",
+    "question": "How does the Spring Bean Lifecycle work?",
+    "answer": "1. The 5 Core Stages:\n   - Instantiation: Spring calls the constructor (`new`) to create the raw object in memory.\n   - Populate Properties (DI): Spring injects all required dependencies via constructor or setters.\n   - Initialization: Runs setup tasks via `@PostConstruct` right after dependencies are fully wired.\n   - Ready / In Use: The bean is fully operational, cached in the IoC container, and actively\n     serves application requests (e.g., handling HTTP calls, running business logic).\n   - Destruction: Runs cleanup tasks via `@PreDestroy` when the application context shuts down.\n\n2. Real-World Hook Usage:\n   - `@PostConstruct` (Setup): Warming up cache from the DB, validating required environment\n     variables/secrets, or establishing a third-party socket connection.\n   - `@PreDestroy` (Cleanup): Draining an in-memory queue, closing open network sockets, or\n     flushing buffers to disk before the application exits.\n\n3. Interview Quick Summary:\n   - \"Instantiate -> Populate (DI) -> Initialize (@PostConstruct) -> Ready/Usage -> Destroy (@PreDestroy).\""
+  },
+  {
+    "id": 60,
+    "topic": "Networking",
+    "question": "What is the difference between TCP Sliding Window and Flow Control?",
+    "answer": "1. The Problem:\n   - If a fast sender transmits packets faster than the receiver can read/process them,\n     the receiver's OS buffer will overflow, dropping packets and triggering wasteful retransmissions.\n\n2. The Sliding Window Mechanism:\n   - Both sides maintain dynamic sequence number ranges (windows) determining how many bytes\n     can be transmitted without waiting for an acknowledgment (ACK).\n   - Allows pipelining: multiple packets travel across the wire simultaneously, maximizing throughput.\n\n3. Flow Control (Receiver-Driven):\n   - Every TCP ACK returned by the receiver contains an updated **Receive Window (rwnd)** field.\n   - Indicates exact free buffer capacity left on the receiver's end:\n     * If receiver buffer is filling fast, `rwnd` shrinks, forcing sender to throttle back.\n     * If `rwnd = 0` (Zero Window), sender stops transmitting completely and fires periodic\n       Window Probe packets until space opens up."
+  },
+  {
+    "id": 61,
+    "topic": "Networking",
+    "question": "What is a Reverse Proxy (Nginx) and how is it different from a Forward Proxy?",
+    "answer": "1. Forward Proxy (Protects/Hides Clients):\n   - Sits in front of a group of clients (internal corporate network).\n   - Intercepts outgoing requests to external internet servers.\n   - Use Cases: Masking client IP addresses, bypassing regional firewalls, caching outbound\n     traffic, enforcing corporate web content filtering.\n\n2. Reverse Proxy (Protects/Hides Servers):\n   - Sits in front of backend application servers.\n   - Intercepts incoming requests from the public internet and routes them to internal services.\n   - Use Cases:\n     * Load balancing traffic across multiple backend instances.\n     * SSL/TLS Termination: Decrypts HTTPS at the gateway edge to spare backend CPU load.\n     * Static asset caching (images, scripts, HTML) to avoid hitting application servers.\n     * Security barrier: Hides internal private IP topology and defends against direct DDoS."
+  },
+  {
+    "id": 62,
+    "topic": "Networking",
+    "question": "How does DNS work under the hood when you type a URL?",
+    "answer": "1. What DNS Does (Phonebook of the Internet):\n   - Maps human-readable domain names (e.g., `api.example.com`) to machine-readable\n     IP addresses (e.g., `192.0.2.1`).\n\n2. The Resolution Flow (Step-by-Step):\n   - Step 1 (Local Cache): Browser checks its own cache, then OS cache, then router cache.\n   - Step 2 (Recursive Resolver): If missed, request hits the ISP / DNS Resolver (e.g., 8.8.8.8).\n   - Step 3 (Root Server): Resolver queries the Root DNS server (`.`), which points to the\n     TLD (Top-Level Domain) server for `.com`.\n   - Step 4 (TLD Server): Resolver queries `.com` TLD server, which returns the Authoritative\n     Name Server for `example.com`.\n   - Step 5 (Authoritative Server): Resolves the final IP address for `api.example.com`.\n   - Step 6 (Cache & Return): Resolver caches the IP based on the record's TTL (Time-To-Live)\n     and returns it to the browser.\n\n3. Key Record Types:\n   - `A`: Maps domain to IPv4.\n   - `AAAA`: Maps domain to IPv6.\n   - `CNAME`: Alias pointing one domain name to another domain name."
+  },
+  {
+    "id": 63,
+    "topic": "OS",
+    "question": "What is the difference between CPU Context Switching and Thread Context Switching?",
+    "answer": "1. What is Context Switching:\n   - The OS saves the state (registers, program counter, stack pointer) of a currently running\n     task and loads the saved state of another task so the CPU can switch between them.\n\n2. Process Context Switch (Heavy / Expensive):\n   - Switches between two completely different processes.\n   - Must flush the virtual memory mappings and CPU's TLB (Translation Lookaside Buffer).\n   - Incurs high cache miss penalties because new process code and data must be pulled into\n     CPU L1/L2/L3 caches.\n\n3. Thread Context Switch (Light / Fast):\n   - Switches between threads within the SAME process.\n   - Shares the same virtual address space, heap, open file descriptors, and page table.\n   - No TLB flush required; CPU caches remain largely warm and valid."
+  },
+  {
+    "id": 64,
+    "topic": "Java",
+    "question": "What is the difference between String, StringBuilder, and StringBuffer in Java?",
+    "answer": "1. String:\n   - Immutable: Any modification creates a brand new object on the heap.\n   - Thread-safe: Yes (immutable state is inherently safe to read concurrently).\n   - Best for: Constants, map keys, fixed text.\n\n2. StringBuilder (Java 5+):\n   - Mutable: Directly modifies its internal `char[]` buffer without creating new objects.\n   - Thread-safe: No (methods are NOT synchronized; zero locking overhead).\n   - Best for: String manipulations, concatenation loops, and building text in single-threaded code.\n\n3. StringBuffer:\n   - Mutable: Modifies its internal buffer directly.\n   - Thread-safe: Yes (all public methods use `synchronized`).\n   - Best for: Legacy code where thread-safe mutable string modifications across threads are needed\n     (rarely used in modern Java; prefer `StringBuilder` inside method scope)."
+  },
+  {
+    "id": 65,
+    "topic": "Networking",
+    "question": "What are HTTP Status Code families and what are the most common codes?",
+    "answer": "1. The 5 Categories:\n   - 1xx (Informational): Request received, continuing process (e.g., `101 Switching Protocols` for WebSockets).\n   - 2xx (Success): Action successfully received, understood, and accepted.\n   - 3xx (Redirection): Further action needed to complete request (e.g., URL moved).\n   - 4xx (Client Error): Problem is on the caller's end (bad payload, missing credentials).\n   - 5xx (Server Error): Problem is on the server's end (unhandled crash, gateway timeout).\n\n2. Top Interview Codes to Know:\n   - 200 OK: Standard successful response.\n   - 201 Created: New resource successfully created (typical response for POST).\n   - 204 No Content: Request succeeded, but response body is intentionally empty (common for DELETE).\n   - 400 Bad Request: Invalid syntax or missing required fields in request payload.\n   - 401 Unauthorized: Caller is unauthenticated (missing or invalid token/credentials).\n   - 403 Forbidden: Caller is authenticated, but lacks permissions/roles to view resource.\n   - 404 Not Found: Requested endpoint or resource does not exist.\n   - 409 Conflict: Request conflicts with current server state (e.g., duplicate email registration).\n   - 500 Internal Server Error: Generic unhandled server-side exception.\n   - 502 Bad Gateway: Upstream server returned an invalid response (e.g., Nginx cannot talk to Spring Boot).\n   - 503 Service Unavailable: Server is overloaded or down for maintenance.\n   - 504 Gateway Timeout: Upstream server failed to respond in time."
+  },
+  {
+    "id": 66,
+    "topic": "Java",
+    "question": "How does Java 8 Lambda Expressions and Functional Interfaces work?",
+    "answer": "1. What is a Lambda Expression:\n   - An anonymous (unnamed) function that can be treated as a value: passed as a method\n     argument, returned, or stored in a variable.\n   - Eliminates boilerplate code by providing a concise, inline implementation of a\n     Functional Interface without writing verbose anonymous inner classes.\n   - Syntax: `(parameters) -> { body }`\n\n2. Functional Interface (The Foundation of Lambdas):\n   - An interface with exactly ONE abstract method (SAM - Single Abstract Method).\n   - Can have multiple `default` or `static` methods.\n   - Annotated with `@FunctionalInterface` to enforce the SAM rule at compile time.\n   - Rule: A Lambda expression can ONLY be used where a Functional Interface is expected.\n\n3. Core Built-In Functional Interfaces (java.util.function):\n   - `Predicate<T>`: Takes 1 input, returns `boolean` (`test(T t)`). Used for filtering.\n   - `Function<T, R>`: Takes input T, returns result R (`apply(T t)`). Used for transformations.\n   - `Consumer<T>`: Takes 1 input, returns `void` (`accept(T t)`). Used for side effects (e.g., logging).\n   - `Supplier<T>`: Takes 0 inputs, returns value T (`get()`). Used for lazy evaluation/factories.\n\n4. Under the Hood (How the JVM Runs It):\n   - Does NOT compile into an anonymous inner class (no extra `ClassName$1.class` file is generated).\n   - The JVM uses the `invokedynamic` (INDY) bytecode instruction to dynamically create a call site\n     at runtime via `LambdaMetafactory`, reducing disk footprint and Metaspace memory usage."
+  },
+  {
+    "id": 67,
+    "topic": "Spring",
+    "question": "What is Spring Boot Actuator and why is it used in production?",
+    "answer": "1. What It Is:\n   - A production-ready monitoring sub-project of Spring Boot that exposes operational endpoints\n     (via HTTP or JMX) to check app health, metrics, and internal state without writing custom code.\n\n2. Essential Endpoints:\n   - `/actuator/health`: Shows application status (UP/DOWN). Checks database connectivity,\n     disk space, and downstream queue/cache health.\n   - `/actuator/metrics`: Exposes OS, JVM, and application metrics (CPU usage, heap memory,\n     active database connections via HikariCP, HTTP request latencies).\n   - `/actuator/info`: Displays custom build/git metadata and versioning.\n   - `/actuator/beans`: Returns the complete graph of all initialized beans in the IoC container.\n\n3. Production Security Rule:\n   - Never expose all actuator endpoints publicly (`management.endpoints.web.exposure.include=*`\n     is dangerous).\n   - Restrict access to internal networks or protect sensitive endpoints behind Spring Security role\n     checks."
+  },
+  {
+    "id": 68,
+    "topic": "Java",
+    "question": "What is the difference between Synchronous, Asynchronous Programming?",
+    "answer": "1. Synchronous (Blocking):\n   - One request per thread. Thread halts and sleeps while waiting for disk or network I/O.\n   - Bottleneck: High concurrent users exhaust the thread pool, consuming heavy RAM (1MB stack per thread).\n\n2. Asynchronous (Non-Blocking via Thread Offloading):\n   - Main thread delegates I/O task to a worker thread pool (via `@Async` or `CompletableFuture`).\n   - Improves responsiveness, but still consumes thread pool resources behind the scenes."
+  },
+  {
+    "id": 70,
+    "topic": "Java",
+    "question": "How does Java 21 Virtual Threads (Project Loom) work vs Platform Threads?",
+    "answer": "1. The Problem with Platform Threads (OS Threads):\n   - 1:1 Mapping: Every `java.lang.Thread` directly maps to one heavy OS kernel thread.\n   - Resource Heavy: Each thread consumes ~1MB of memory for its call stack.\n   - Scalability Limit: A server crashes or runs out of memory around a few thousand threads,\n     causing thread starvation when threads block on DB or network I/O.\n\n2. Virtual Threads (M:N Mapping):\n   - Lightweight threads managed entirely by the JVM runtime, not the OS kernel.\n   - Millions of virtual threads can run simultaneously (each consumes only a few hundred bytes).\n   - JVM mounts a virtual thread onto a standard OS \"carrier thread\" to execute CPU work."
+  },
+  {
+    "id": 71,
+    "topic": "Spring",
+    "question": "What is the difference between `@NotNull`, `@NotEmpty`, and `@NotBlank` in Spring Validation?",
+    "answer": "1. `@NotNull`:\n   - Checks: The value must NOT be `null`.\n   - Allows: Empty strings `\"\"` and whitespace-only strings `\"   \"`.\n   - Best for: Numbers, Dates, Booleans, or custom Objects.\n\n2. `@NotEmpty`:\n   - Checks: The value must NOT be `null` AND its size/length must be greater than 0.\n   - Allows: Whitespace-only strings `\"   \"`.\n   - Best for: Collections (List, Set) and Maps to ensure at least one element exists.\n\n3. `@NotBlank`:\n   - Checks: The value must NOT be `null`, AND the trimmed length must be greater than 0\n     (cannot be pure whitespace).\n   - Allows: Only strings containing at least one non-whitespace character (e.g., `\"abc\"`).\n   - Best for: Text fields like `username`, `email`, and `password`."
+  },
+  {
+    "id": 72,
+    "topic": "Java",
+    "question": "What is the difference between Deep Copy vs Shallow Copy in Java?",
+    "answer": "1. Shallow Copy:\n   - Creates a new instance of the collection/object, but copies references to the nested\n     internal objects rather than duplicating the objects themselves.\n   - Consequence: Modifying an inner object field via the copy alters the original object as well.\n   - Example: Default `Object.clone()`, `new ArrayList<>(originalList)`.\n\n2. Deep Copy:\n   - Creates a completely independent clone of the object AND recursively creates new clones\n     of every object it references.\n   - Consequence: Changes made to the copied object never affect the original object.\n   - How to Implement:\n     * Manual instantiation: Recursively calling constructors for all child objects.\n     * Copy constructors.\n     * Serialization/Deserialization (e.g., converting to JSON via Jackson and parsing back)."
+  },
+  {
+    "id": 74,
+    "topic": "Java",
+    "question": "What is the difference between Statement vs PreparedStatement in JDBC?",
+    "answer": "1. SQL Injection Vulnerability:\n   - `Statement`: Concatenates raw strings into SQL queries. An attacker inputting `' OR '1'='1`\n     alters the query logic, leading to catastrophic data leaks.\n   - `PreparedStatement`: Uses parameterized queries (`?`). The DB driver treats user input strictly\n     as literal values, never as executable SQL, completely preventing SQL Injection.\n\n2. Query Compilation & Performance:\n   - `Statement`: Database must compile, parse, and generate an execution plan on EVERY single call.\n   - `PreparedStatement`: Pre-compiled once by the DB engine; repeated calls reuse the execution plan\n     with different bound parameters, dramatically boosting performance.\n\n3. Rule of Thumb:\n   - Never use raw `Statement` in production code. Always use `PreparedStatement`."
+  },
+  {
+    "id": 75,
+    "topic": "SQL",
+    "question": "What is the difference between INNER JOIN, LEFT JOIN, and FULL OUTER JOIN in SQL?",
+    "answer": "1. INNER JOIN:\n   - Returns ONLY the rows where there is a matching key in BOTH tables.\n   - Any row in Table A or Table B without a matching counterpart is excluded from the result.\n\n2. LEFT (OUTER) JOIN:\n   - Returns ALL rows from the left table, plus matched rows from the right table.\n   - If there is no match on the right side, the columns from the right table return `NULL`.\n\n3. FULL OUTER JOIN:\n   - Returns ALL rows from BOTH tables.\n   - Fills in `NULL` on whichever side lacks a matching row.\n\n4. Quick Visual Guide:\n   - `INNER`: Only the intersection (A ∩ B).\n   - `LEFT`: Everything in A, plus whatever matched in B.\n   - `FULL`: Complete union of A and B with nulls where unmatched."
+  },
+  {
+    "id": 77,
+    "topic": "DBMS",
+    "question": "What is Database Normalization (1NF, 2NF, 3NF, BCNF)?",
+    "answer": "1. Why Normalize:\n   - Eliminates data redundancy, minimizes storage waste, and prevents insertion, update,\n     and deletion anomalies.\n\n2. The Normal Forms:\n   - 1NF (Atomic Values):\n     * Each column must contain atomic (indivisible) values.\n     * No arrays, comma-separated lists, or repeating groups within a single cell.\n   - 2NF (No Partial Dependency):\n     * Must already be in 1NF.\n     * All non-key attributes must depend on the ENTIRE primary key, not just a part of a\n       composite primary key.\n   - 3NF (No Transitive Dependency):\n     * Must already be in 2NF.\n     * Non-key columns must depend ONLY on the primary key, not on another non-key column\n       (e.g., `zip_code -> city`; city should be in a separate table).\n   - BCNF (Boyce-Codd Normal Form):\n     * A stricter version of 3NF where for every functional dependency `X -> Y`,\n       `X` must be a super key."
+  },
+  {
+    "id": 78,
+    "topic": "Java",
+    "question": "How does ThreadLocal work in Java and what are its memory leak risks?",
+    "answer": "1. Core Concept:\n   - Provides thread-local variables where each thread has its own independently initialized copy.\n   - Allows passing contextual data (e.g., User ID, Security Context, Transaction ID) down through\n     service layers without passing it as an explicit method parameter.\n\n2. Internal Structure:\n   - Stored in a `ThreadLocalMap` located inside the active `Thread` object itself.\n   - The key is a `WeakReference` to the `ThreadLocal` instance; the value is a strong reference\n     to the actual data.\n\n3. The Memory Leak Trap in ThreadPools:\n   - In frameworks like Tomcat or Spring, worker threads from a pool never die; they are reused.\n   - If the `ThreadLocal` key is garbage-collected, the map entry key becomes `null`, but the\n     underlying value remains strongly referenced by the living thread.\n   - Fix: Always remove the value inside a `finally` block:\n     ```java\n     try {\n         userContext.set(currentUser);\n         processRequest();\n     } finally {\n         userContext.remove(); // Mandatory cleanup\n     }\n     ```"
+  },
+  {
+    "id": 79,
+    "topic": "Java",
+    "question": "What is the difference between Synchronized Collection vs Concurrent Collection?",
+    "answer": "1. Synchronized Collections (`Collections.synchronizedList()`, `Vector`, `Hashtable`):\n   - Mechanism: Wraps every method with a coarse-grained monitor lock on the entire collection object.\n   - Drawback: Only one thread can read OR write at any given millisecond. All other threads block,\n     creating severe performance bottlenecks under high concurrency.\n   - Iteration: Still requires manual synchronization on the collection to avoid fail-fast\n     `ConcurrentModificationException`.\n\n2. Concurrent Collections (`ConcurrentHashMap`, `CopyOnWriteArrayList`):\n   - Mechanism: Employs lock striping, bucket-level locking, and lock-free CAS (Compare-And-Swap)\n     operations.\n   - Reads: Completely non-blocking and concurrent.\n   - Writes: Lock only the specific bucket or create a copy (in `CopyOnWriteArrayList`), allowing\n     multiple simultaneous writers on separate segments.\n   - Iteration: Provides weakly consistent, fail-safe iterators that never throw\n     `ConcurrentModificationException`."
+  },
+  {
+    "id": 80,
+    "topic": "Cloud",
+    "question": "What is the difference between Stateless and Stateful Architecture?",
+    "answer": "1. Stateful Architecture:\n   - The server stores client session data locally in memory between requests.\n   - Consequence: Subsequent requests from the same user **must** hit the exact same server\n     instance (requires sticky sessions on the load balancer).\n   - Failure Risk: If that specific server crashes, the user's session data is lost.\n\n2. Stateless Architecture:\n   - The server stores zero session state; every incoming request must contain all necessary\n     authentication and context data (e.g., a signed JWT in the Authorization header).\n   - Benefits:\n     * Any backend server can handle any request instantly.\n     * Horizontal scaling becomes trivial (load balancers can distribute requests using simple\n       Round Robin)."
+  },
+  {
+    "id": 81,
+    "topic": "Java",
+    "question": "What is the difference between throw vs throws in Java?",
+    "answer": "1. throw:\n   - Used inside a method body to actively trigger an exception.\n   - Syntax: Followed by an exception instance (`throw new IllegalArgumentException(\"Invalid ID\");`).\n   - Execution halts immediately unless caught in an enclosing try-catch block.\n\n2. throws:\n   - Used in the method signature to declare that this method might produce an exception.\n   - Syntax: Followed by exception class names (`public void readFile() throws IOException`).\n   - Acts as a warning to the caller that it must handle or re-declare this checked exception."
+  },
+  {
+    "id": 82,
+    "topic": "Java",
+    "question": "How does HashSet guarantee uniqueness internally?",
+    "answer": "1. Backed by HashMap:\n   - A `HashSet` does not maintain its own array; internally, it is just a wrapper around a `HashMap`.\n   - `private transient HashMap<E, Object> map;`\n\n2. How .add(element) Works:\n   - When you call `set.add(\"apple\")`, it executes:\n     `map.put(\"apple\", DUMMY_OBJECT);`\n   - Your element becomes the **Key** of the internal map.\n   - The value is simply a static, dummy `new Object()` placeholder (called `PRESENT`).\n\n3. Uniqueness Rule:\n   - Because a `HashMap` cannot have duplicate keys, attempting to add an element that already\n     exists triggers the standard HashMap key-replacement check (`hashCode()` + `equals()`).\n   - If `put()` returns `null` (key was new), `set.add()` returns `true`.\n   - If `put()` returns an existing value, `set.add()` returns `false` (duplicate rejected)."
+  },
+  {
+    "id": 83,
+    "topic": "SQL",
+    "question": "What is the difference between WHERE and HAVING in SQL?",
+    "answer": "1. WHERE:\n   - Filters individual rows **before** any aggregation (`GROUP BY`) takes place.\n   - Cannot use aggregate functions (e.g., `WHERE count(*) > 5` is a syntax error).\n   - Applied directly to the base table rows.\n\n2. HAVING:\n   - Filters grouped summaries **after** data has been grouped by `GROUP BY`.\n   - Works explicitly with aggregate functions like `COUNT()`, `SUM()`, `AVG()`.\n\n3. Practical Example:\n   ```sql\n   SELECT department, COUNT(*)\n   FROM employees\n   WHERE salary > 50000        -- Step 1: Filter individual high-earning rows\n   GROUP BY department         -- Step 2: Group by department\n   HAVING COUNT(*) > 5;        -- Step 3: Keep only departments with > 5 high earners"
+  },
+  {
+    "id": 84,
+    "topic": "Spring",
+    "question": "What is the difference between @RequestParam and @PathVariable in Spring Boot?",
+    "answer": "1. @PathVariable (URI Path Segment):\n   - Extracts data directly embedded inside the URL path itself.\n   - URL: `/api/users/42`\n   - Syntax: `@GetMapping(\"/api/users/{id}\") public User getUser(@PathVariable Long id)`\n   - Best for: Identifying a specific, distinct resource.\n\n2. @RequestParam (Query Parameter):\n   - Extracts data passed as key-value query strings after the `?` delimiter.\n   - URL: `/api/users?status=active&page=2`\n   - Syntax: `@GetMapping(\"/api/users\") public List<User> getUsers(@RequestParam String status,\n     @RequestParam int page)`\n   - Best for: Filtering, sorting, and pagination options."
+  },
+  {
+    "id": 85,
+    "topic": "Java",
+    "question": "What is the difference between map() and flatMap() in Java 8 Streams?",
+    "answer": "1. map() (One-to-One Transformation):\n   - Principle: Takes an element T and transforms it into a single element R via Function<T, R>.\n   - Structure: Preserves the stream structure; maps Stream<T> directly to Stream<R>.\n   - Example: Transforming a list of names to uppercase.\n     `names.stream().map(String::toUpperCase);`\n     Input: [\"john\", \"jane\"] -> Output: [\"JOHN\", \"JANE\"].\n\n2. flatMap() (One-to-Many Transformation + Flattening):\n   - Principle: Takes an element T, maps it to a Stream of elements (Stream<R>), and flattens\n     all generated sub-streams into a single composite Stream<R>.\n   - Structure: Removes nested collections/streams (turns Stream<List<R>> into Stream<R>).\n   - Example: Merging orders containing multiple items into a single flat stream of items.\n     Input: [[Item1, Item2], [Item3]] -> Output: [Item1, Item2, Item3]."
+  },
+  {
+    "id": 86,
+    "topic": "Java",
+    "question": "What is the difference between Runnable and Callable in Java?",
+    "answer": "1. Runnable (java.lang.Runnable - Java 1.0):\n   - Method Signature: `public void run()`\n   - Return Value: Cannot return a result directly (returns void).\n   - Exception Handling: Cannot throw checked exceptions; errors must be handled inside `run()`.\n   - Execution: Can be passed directly to `new Thread(runnable)` or an `ExecutorService`.\n\n2. Callable<V> (java.util.concurrent.Callable - Java 5):\n   - Method Signature: `public V call() throws Exception`\n   - Return Value: Returns a typed generic value `V`.\n   - Exception Handling: Can throw checked exceptions directly from the method signature.\n   - Execution: Submitted to an `ExecutorService`, returning a `Future<V>` to fetch the result via\n     `.get()`."
+  },
+  {
+    "id": 87,
+    "topic": "SQL",
+    "question": "What is the SQL Logical Order of Query Execution?",
+    "answer": "1. Written Syntax Order (How you write it):\n   - `SELECT -> FROM -> JOIN -> WHERE -> GROUP BY -> HAVING -> ORDER BY -> LIMIT`\n\n2. Logical Execution Order (How the Database Engine runs it):\n   - Step 1 (FROM / JOIN): Identifies base tables and applies join conditions to create working dataset.\n   - Step 2 (WHERE): Filters individual rows based on row-level conditions before grouping.\n   - Step 3 (GROUP BY): Combines rows sharing identical values in specified columns into summary rows.\n   - Step 4 (HAVING): Filters grouped summary rows using aggregate conditions (COUNT, SUM, AVG).\n   - Step 5 (SELECT): Evaluates expressions, generates aliases, and extracts requested columns.\n   - Step 6 (DISTINCT): Removes duplicate rows from the selected output set.\n   - Step 7 (ORDER BY): Sorts the final result set in ascending or descending order.\n   - Step 8 (LIMIT / OFFSET): Restricts the total number of returned rows.\n\n3. Why It Matters in Interviews:\n   - Explains why column aliases created in `SELECT` cannot be used inside `WHERE` (the `WHERE`\n     clause runs before the `SELECT` clause even exists in execution order)."
+  },
+  {
+    "id": 88,
+    "topic": "Spring",
+    "question": "What is the difference between @Controller and @RestController in Spring Boot?",
+    "answer": "1. @Controller (Traditional MVC / Web Pages):\n   - Purpose: Designed for server-side rendering (SSR) of dynamic web views (HTML/JSP/Thymeleaf).\n   - Default Behavior: Methods return a `String` representing the name of a view/template.\n   - Flow: `DispatcherServlet` uses `ViewResolver` to find and render the actual HTML page.\n   - To return raw data (JSON): You must manually mark each method with `@ResponseBody`.\n\n2. @RestController (RESTful APIs):\n   - Purpose: Designed for building headless, modern REST APIs returning raw JSON or XML data.\n   - Composition: It is a convenience meta-annotation combining `@Controller` + `@ResponseBody`.\n   - Flow: Skips `ViewResolver` entirely. Every method automatically serializes the returned Java\n     object directly into JSON using `HttpMessageConverter` (Jackson) and writes it into the HTTP\n     response body."
+  },
+  {
+    "id": 89,
+    "topic": "SQL",
+    "question": "What is the difference between RANK(), DENSE_RANK(), and ROW_NUMBER() in SQL?",
+    "answer": "1. ROW_NUMBER():\n   - Assigns a unique, consecutive integer to each row within a partition, starting at 1.\n   - Ignores ties completely; two rows with identical values get different sequential numbers.\n   - Example (values: 100, 100, 80): Returns 1, 2, 3.\n\n2. RANK():\n   - Assigns the same rank to identical values (handles ties).\n   - Skips subsequent ranks to account for the number of tied rows (leaves gaps).\n   - Example (values: 100, 100, 80): Returns 1, 1, 3 (rank 2 is skipped).\n\n3. DENSE_RANK():\n   - Assigns the same rank to identical values (handles ties).\n   - Does NOT skip any numbers; continues with the immediate next sequential integer.\n   - Example (values: 100, 100, 80): Returns 1, 1, 2.\n   - Best for: Finding the Nth highest salary (e.g., `WHERE dense_rank = 2`)."
+  },
+  {
+    "id": 90,
+    "topic": "Java",
+    "question": "What is the difference between wait() and sleep() in Java?",
+    "answer": "1. Origin & Class:\n   - `sleep(ms)`: A static method defined on `java.lang.Thread`.\n   - `wait()`: An instance method defined on `java.lang.Object`.\n\n2. Lock Release Mechanism:\n   - `sleep(ms)`: Pauses execution for a specified duration, but **holds onto all locks** it acquired.\n     No other thread can enter the synchronized block.\n   - `wait()`: **Releases the monitor lock** immediately, allowing other waiting threads to acquire\n     the lock and execute.\n\n3. Context & Awakening:\n   - `sleep(ms)`: Can be invoked anywhere. Wakes up automatically when the time interval expires.\n   - `wait()`: Must be called inside a `synchronized` block/method (throws `IllegalMonitorStateException`\n     otherwise). Remains suspended until another thread calls `notify()` or `notifyAll()` on that object."
+  },
+  {
+    "id": 91,
+    "topic": "SQL",
+    "question": "What is the difference between Primary Key, Unique Key, and Foreign Key in SQL?",
+    "answer": "1. Primary Key:\n   - Uniquely identifies each record in a table.\n   - Constraints: Must be strictly unique and **cannot contain NULL** values.\n   - Limitation: A table can have only ONE primary key (can be composite across multiple columns).\n   - Storage: Automatically creates a clustered index by default in engines like MySQL InnoDB.\n\n2. Unique Key:\n   - Guarantees that all values in a specific column or set of columns are distinct.\n   - Constraints: **Allows NULL** values (typically allows multiple NULLs in standard SQL, or single\n     NULL depending on dialect).\n   - Limitation: A table can have multiple unique key constraints.\n\n3. Foreign Key:\n   - A column (or set of columns) that references the primary key or unique key of another table.\n   - Purpose: Enforces referential integrity, preventing actions that destroy links between tables\n     (e.g., blocks inserting an order with a non-existent `customer_id` or deleting a customer with\n     active orders via `ON DELETE RESTRICT`)."
+  },
+  {
+    "id": 92,
+    "topic": "Java",
+    "question": "What is the difference between `this` and `super` keywords in Java?",
+    "answer": "1. `this` Keyword:\n   - Refers to the current instance of the class.\n   - Usages:\n     * Differentiates instance variables from local method parameters with the same name:\n       `this.name = name;`\n     * Invokes another constructor within the same class (Constructor Chaining):\n       `this(10);` (must be the very first statement in the constructor).\n     * Passes the current object reference to another method:\n       `process(this);`\n\n2. `super` Keyword:\n   - Refers directly to the immediate parent (superclass) instance.\n   - Usages:\n     * Accesses parent class fields or overridden methods hidden by the child class:\n       `super.makeSound();`\n     * Invokes the parent class constructor:\n       `super(name, age);` (must be the very first statement in child constructor).\n\n3. Critical Interview Rule:\n   - You cannot use `this()` and `super()` inside the same constructor because both require\n     being on the very first line of code.\n   - Neither keyword can be used inside a `static` method because static contexts belong\n     to the class, not an object instance."
+  },
+  {
+    "id": 93,
+    "topic": "Java",
+    "question": "Can we overload or override the main() method in Java? Which one executes?",
+    "answer": "1. Overloading main():\n   - Yes, you can freely overload `main()` by providing different parameter types or counts:\n     * `public static void main(String[] args)`\n     * `public static void main(String arg)`\n     * `public static void main(int a, int b)`\n   - The code compiles without errors.\n\n2. Which One Executes at Startup:\n   - The JVM always searches strictly for the exact entry-point signature:\n     `public static void main(String[] args)`\n   - Overloaded variants behave like standard static methods; they run only if called\n     explicitly inside the main method.\n\n3. Overriding main():\n   - No, you cannot override `main()` because it is declared `static`.\n   - Declaring a method with the same signature in a subclass results in **Method Hiding**,\n     not runtime polymorphism."
+  },
+  {
+    "id": 94,
+    "topic": "Java",
+    "question": "What is the difference between Functional Interface vs Marker Interface in Java?",
+    "answer": "1. Functional Interface (Java 8+):\n   - Definition: An interface containing exactly ONE abstract method (SAM - Single Abstract Method).\n   - Annotations: Annotated with `@FunctionalInterface` to enforce the single-method constraint at compile time.\n   - Purpose: Serves as the target type for Lambda expressions and method references.\n   - Examples: `Runnable`, `Callable`, `Comparator`, `Predicate`.\n\n2. Marker (Tagging) Interface:\n   - Definition: An interface with zero methods and zero fields (completely empty body).\n   - Purpose: Delivers metadata or runtime capability instructions directly to the JVM or compiler.\n   - Examples: `Serializable`, `Cloneable`, `Remote`.\n   - Modern Alternative: Largely replaced in modern Java by custom Annotations (`@Annotation`)."
+  },
+  {
+    "id": 95,
+    "topic": "Java",
+    "question": "What is the difference between start() and run() in Java Multithreading?",
+    "answer": "1. start() Method:\n   - Registers and requests a new call stack from the OS/JVM, transitioning the thread\n     into the `RUNNABLE` state.\n   - Automatically executes the thread's `run()` logic asynchronously on this newly created thread.\n   - Throws `IllegalThreadStateException` if called more than once on the same thread instance.\n\n2. run() Method:\n   - Contains the actual business logic to be executed by the thread.\n   - If called directly (e.g., `t.run()`), it behaves like a standard synchronous method call:\n     runs on the current caller thread without spawning a new background thread."
+  },
+  {
+    "id": 96,
+    "topic": "Java",
+    "question": "How do you create and handle Custom Exceptions in Java and Spring Boot?",
+    "answer": "1. Creating Custom Exceptions:\n   - Checked Exception: Inherit from `java.lang.Exception`. Must be declared via `throws`\n     or handled in a `try-catch` block.\n   - Unchecked Exception (Standard Backend Practice): Inherit from `java.lang.RuntimeException`:\n     ```java\n     public class ResourceNotFoundException extends RuntimeException {\n         public ResourceNotFoundException(String message) {\n             super(message);\n         }\n     }\n     ```\n\n2. Handling via Spring Boot Global Handler:\n   - Use `@RestControllerAdvice` and `@ExceptionHandler` to intercept the custom exception\n     and return an accurate HTTP status code (e.g., 404 Not Found) with a clean JSON payload:\n     ```java\n     @RestControllerAdvice\n     public class GlobalExceptionHandler {\n         @ExceptionHandler(ResourceNotFoundException.class)\n         public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {\n             return ResponseEntity.status(HttpStatus.NOT_FOUND)\n                     .body(new ErrorResponse(404, ex.getMessage()));\n         }\n     }\n     ```"
+  },
+  {
+    "id": 97,
+    "topic": "Java",
+    "question": "What are the JVM Memory Areas: Heap, Stack, Method Area/Metaspace, and Program Counter?",
+    "answer": "1. Heap Memory:\n   - Shared across all threads in the application.\n   - Stores all runtime objects (`new MyObject()`), arrays, and instance variables.\n   - Managed automatically by the Garbage Collector. Throws `OutOfMemoryError: Java\n     heap space` on exhaustion.\n\n2. Stack Memory:\n   - Allocated on a per-thread basis (private to each thread).\n   - Stores stack frames containing local primitive variables, method parameters, and object\n     references.\n   - Follows LIFO order, deallocating memory automatically as methods return. Throws\n     `StackOverflowError` on overflow.\n\n3. Method Area / Metaspace:\n   - Shared across all threads; stores class-level metadata, runtime constant pool, static variables,\n     and bytecode.\n   - Since Java 8, it resides in native off-heap memory (Metaspace) rather than fixed JVM memory\n     (PermGen).\n\n4. Program Counter (PC) Register:\n   - Each thread has its own dedicated PC register.\n   - Holds the memory address of the JVM bytecode instruction currently being executed by that thread."
+  },
+  {
+    "id": 98,
+    "topic": "Spring",
+    "question": "How do you handle Cross-Site Scripting (XSS) and SQL Injection in Spring Boot?",
+    "answer": "1. SQL Injection Defense:\n   - Use Spring Data JPA, Hibernate, or `JdbcTemplate` with parameterized queries.\n   - Behind the scenes, these frameworks bind user inputs via `PreparedStatement`, ensuring inputs are\n     treated strictly as literals, not executable SQL statements.\n\n2. Cross-Site Scripting (XSS) Defense:\n   - Use input validation and sanitization using Jakarta Validation (`@Pattern`, `@Size`) to reject\n     payloads containing raw HTML/script tags.\n   - Configure HTTP security response headers via Spring Security to restrict browser script execution:\n     * Content Security Policy (CSP): `Content-Security-Policy: default-src 'self'`\n     * XSS Protection: `X-XSS-Protection: 1; mode=block`\n   - Ensure the frontend or template engine uses contextual HTML escaping before rendering user strings."
+  },
+  {
+    "id": 99,
+    "topic": "Java",
+    "question": "What is the difference between @Mock and @InjectMocks in Mockito?",
+    "answer": "1. @Mock:\n   - Creates a simulated (dummy) instance of a dependent class or interface.\n   - Methods return default values (`null`, `0`, `false`) unless explicitly stubbed using\n     `when().thenReturn()`.\n   - Used to mock collaborating layers like repositories or external client classes.\n\n2. @InjectMocks:\n   - Creates an actual, concrete instance of the class under test.\n   - Automatically injects all declared `@Mock` (or `@Spy`) objects into this class via constructor\n     or field injection.\n   - Best practice: Always test real business logic inside `@InjectMocks` using mocked dependencies\n     from `@Mock`."
+  },
+  {
+    "id": 100,
+    "topic": "SQL",
+    "question": "What is the difference between UNION and UNION ALL in SQL?",
+    "answer": "1. UNION:\n   - Combines the result sets of two or more `SELECT` queries into a single output.\n   - Automatically performs a distinct sort/deduplication operation to eliminate duplicate rows.\n   - Incurs higher memory and CPU overhead due to the required deduplication pass.\n\n2. UNION ALL:\n   - Combines the result sets of two or more queries directly, preserving every row including\n     duplicates.\n   - Does not perform any sorting or duplicate checks.\n   - Much faster than `UNION`; should always be preferred when results are guaranteed unique or\n     duplicates are acceptable."
+  },
+  {
+    "id": 101,
+    "topic": "SQL",
+    "question": "Write an SQL query to rank employees based on their experience.",
+    "answer": "1. Query Using DENSE_RANK():\n   ```sql\n   SELECT\n       emp_id,\n       emp_name,\n       experience_years,\n       DENSE_RANK() OVER (ORDER BY experience_years DESC) AS experience_rank\n   FROM employees;\n   ```\n\n2. Query Logic:\n   - `OVER (ORDER BY experience_years DESC)`: Sorts employees by highest experience first.\n   - `DENSE_RANK()`: Assigns sequential ranks starting from 1.\n   - Ties Handling: Employees with identical years of experience receive the exact same rank,\n     and the next distinct value gets the immediate next number without gaps (e.g., 1, 1, 2).\n\n3. Partitioning by Department (Optional Variant):\n   - To rank employees within their specific departments, add `PARTITION BY`:\n     `DENSE_RANK() OVER (PARTITION BY department_id ORDER BY experience_years DESC)`."
+  },
+  {
+    "id": 102,
+    "topic": "Java",
+    "question": "What are the differences between Optional.of(), ofNullable(), and orElseGet() in Java?",
+    "answer": "1. Optional.of() vs Optional.ofNullable():\n   - `Optional.of(value)`: Wraps the value; immediately throws `NullPointerException` if value is null.\n   - `Optional.ofNullable(value)`: Wraps the value if present, or returns an empty `Optional.empty()`\n     if the value is null.\n\n2. orElse() vs orElseGet():\n   - `orElse(defaultObj)`: Eager evaluation. The default value expression runs every single time,\n     even if the `Optional` is already populated.\n   - `orElseGet(() -> computeDefault())`: Lazy evaluation. Accepts a `Supplier` and only executes\n     the fallback code when the `Optional` is actually empty.\n   - Best Practice: Always prefer `orElseGet()` for fallback logic involving DB/network calls to\n     avoid unnecessary performance overhead."
+  },
+  {
+    "id": 103,
+    "topic": "Spring",
+    "question": "What is the difference between Lazy vs Eager Loading in JPA / Hibernate?",
+    "answer": "1. Eager Loading (`FetchType.EAGER`):\n   - Related entities are retrieved from the database immediately when the parent entity is fetched.\n   - Mechanism: Executes a `LEFT OUTER JOIN` or an immediate secondary `SELECT` query.\n   - Risk: Loading an entity with multiple eager relationships pulls massive unnecessary datasets,\n     heavily impacting memory and query performance.\n\n2. Lazy Loading (`FetchType.LAZY`):\n   - Related entities are NOT fetched immediately; Hibernate injects a proxy object instead.\n   - Mechanism: Data is loaded from the database only when the getter method is explicitly called\n     (e.g., `user.getOrders().size()`).\n   - Risk: Throws `LazyInitializationException` if you call the getter after the database\n     transaction or Hibernate session has closed."
+  },
+  {
+    "id": 104,
+    "topic": "Spring",
+    "question": "What is the difference between Filter vs Interceptor in Spring Boot?",
+    "answer": "1. Filter (Java Servlet Spec):\n   - Layer: Sits at the Servlet container level (Tomcat), executing before request hits\n     `DispatcherServlet`.\n   - Access: Operates on raw low-level `ServletRequest` and `ServletResponse`. Has zero access to\n     Spring context or handler controller methods.\n   - Use Cases: Low-level tasks like CORS headers, request payload logging, compression (GZIP),\n     and security token parsing.\n\n2. Interceptor (Spring MVC Spec):\n   - Layer: Sits inside Spring MVC, executing between `DispatcherServlet` and `@RestController`.\n   - Access: Has access to the target execution handler (`HandlerMethod`), model, and Spring Beans.\n   - Methods: Provides hooks: `preHandle()`, `postHandle()`, and `afterCompletion()`.\n   - Use Cases: Fine-grained authorization checks, auditing execution time, and adding controller\n     attributes."
+  },
+  {
+    "id": 105,
+    "topic": "Java",
+    "question": "What are Intermediate vs Terminal Operations in Java Stream API?",
+    "answer": "1. Intermediate Operations (Lazy Pipeline Assembly):\n   - Returns a new `Stream` instance, allowing method chaining.\n   - Executes zero computation when declared; evaluation is deferred entirely until a terminal\n     operation is called.\n   - Can be Stateless (e.g., `filter()`, `map()`) or Stateful (requires seeing all elements first,\n     e.g., `sorted()`, `distinct()`).\n\n2. Terminal Operations (Eager Execution & Consumption):\n   - Triggers the execution of the entire pipeline and consumes the stream.\n   - Produces a non-stream result (e.g., a `List`, primitive number, `Optional`) or void side-effect.\n   - Once a terminal operation completes, the stream is closed and cannot be traversed again.\n   - Examples: `collect()`, `forEach()`, `reduce()`, `count()`, `findFirst()`."
+  },
+  {
+    "id": 106,
+    "topic": "Spring",
+    "question": "What is the difference between @Entity, @Table, and @Id in JPA?",
+    "answer": "1. @Entity:\n   - Applied at class level; informs Hibernate/JPA that this POJO represents a persistent\n     database record.\n   - Mandatory requirement for any class managed as a database entity in Spring Data JPA.\n\n2. @Table:\n   - Optional configuration annotation placed alongside `@Entity`.\n   - Used to explicitly customize database table properties, such as setting a custom table name\n     (`@Table(name = \"tbl_orders\")`), adding unique constraints, or defining database indexes.\n   - If omitted, the table name defaults directly to the entity class name.\n\n3. @Id:\n   - Applied on a field or getter to designate that attribute as the Primary Key of the entity.\n   - Commonly paired with `@GeneratedValue(strategy = GenerationType.IDENTITY)` to delegate\n     auto-incrementing ID generation to the underlying database engine."
+  },
+  {
+    "id": 107,
+    "topic": "SQL",
+    "question": "What is the difference between char, varchar, and text data types in SQL?",
+    "answer": "1. CHAR(n) (Fixed-Length String):\n   - Reserves the full specified storage size `n` characters on disk regardless of actual text\n     length.\n   - Pads unused trailing space with blanks (e.g., storing \"IN\" in `CHAR(5)` consumes all 5 bytes).\n   - Best for: Fixed-length values where size never changes (e.g., country codes like 'USA', MD5\n     hashes).\n\n2. VARCHAR(n) (Variable-Length String):\n   - Stores only the actual characters inserted plus a 1- or 2-byte length prefix overhead.\n   - Storing \"IN\" in `VARCHAR(50)` consumes only 2 bytes plus length prefix.\n   - Best for: Names, emails, and general text where string length varies within a known upper\n     limit.\n\n3. TEXT (Large Object / Unbounded):\n   - Designed to store massive strings (up to gigabytes depending on engine) without specifying\n     an `n` limit.\n   - Typically stored off-table in separate overflow pages; the row contains an internal pointer.\n   - Trade-off: Slower access; cannot have default values or standard B-tree index prefixes in\n     some engines."
+  },
+  {
+    "id": 108,
+    "topic": "Java",
+    "question": "What is the difference between ClassNotFoundException and NoClassDefFoundError in Java?",
+    "answer": "1. ClassNotFoundException:\n   - Category: Checked Exception (`java.lang.Exception`).\n   - Root Cause: Occurs at runtime when an application attempts to load a class dynamically by\n     string name (e.g., `Class.forName(\"com.mysql.cj.jdbc.Driver\")` or `ClassLoader.loadClass()`),\n     but the class file does not exist on the classpath.\n   - Handled: Must be caught via `try-catch` or declared via `throws`.\n\n2. NoClassDefFoundError:\n   - Category: Fatal Error (`java.lang.Error`).\n   - Root Cause: Occurs when a class was successfully present at compile time (compilation\n     succeeded),\n     but is missing from the classpath when the JVM tries to execute code that references it at\n     runtime.\n   - Typical Scenario: Missing dependency JAR during deployment, or class initialization failure\n     inside a `static` block that caused the class loader to reject it."
+  }
+]
