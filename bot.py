@@ -3,6 +3,8 @@ import re
 import json
 import html
 import random
+import time
+import urllib.request
 import threading
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -89,13 +91,47 @@ def next_run_time() -> datetime:
 # ---------------------------------------------------------------------------
 # Data
 # ---------------------------------------------------------------------------
-def load_questions():
+QUESTIONS_URL = os.environ.get(
+    "QUESTIONS_URL",
+    "https://raw.githubusercontent.com/Nideevl/Tele_bot/questions/questions.json",
+)
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+CACHE_TTL = 300  # seconds
+_cache = {"data": None, "ts": 0.0}
+
+
+def _load_local():
     try:
         with open("questions.json", "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
-        print(f"Error loading questions: {e}")
+        print(f"Error loading local questions.json: {e}")
         return []
+
+
+def load_questions():
+    now = time.time()
+    if _cache["data"] is not None and now - _cache["ts"] < CACHE_TTL:
+        return _cache["data"]
+
+    if QUESTIONS_URL:
+        try:
+            req = urllib.request.Request(QUESTIONS_URL)
+            if GITHUB_TOKEN:
+                req.add_header("Authorization", f"token {GITHUB_TOKEN}")
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            if isinstance(data, list) and data:
+                _cache["data"] = data
+                _cache["ts"] = now
+                return data
+        except Exception as e:
+            print(f"Remote questions fetch failed: {e}")
+
+    # Remote failed: use last good copy, else the bundled local file
+    if _cache["data"] is not None:
+        return _cache["data"]
+    return _load_local()
 
 
 # ---------------------------------------------------------------------------
@@ -223,6 +259,29 @@ async def send_question(send_func, item):
         await send_func(format_question_plain(item))
 
 
+SEEN_FILE = "seen.json"
+
+
+def load_seen():
+    try:
+        with open(SEEN_FILE, "r", encoding="utf-8") as f:
+            return set(json.load(f))
+    except Exception:
+        return set()
+
+
+def save_seen(seen):
+    try:
+        with open(SEEN_FILE, "w", encoding="utf-8") as f:
+            json.dump(sorted(seen), f)
+    except Exception as e:
+        print(f"Could not save seen.json: {e}")
+
+
+def question_key(q):
+    return str(q.get("id") or q.get("question", ""))
+
+
 def pick_question(chat_id):
     questions = load_questions()
     if not questions:
@@ -234,10 +293,21 @@ def pick_question(chat_id):
 
     normalized_active = {t.lower() for t in active_topics}
     filtered = [q for q in questions if q.get("topic", "").lower() in normalized_active]
+    if not filtered:
+        return None
 
-    if filtered:
-        return random.choice(filtered)
-    return None
+    seen = load_seen()
+    unseen = [q for q in filtered if question_key(q) not in seen]
+
+    if not unseen:
+        # Cycle complete for the active pool: reset only these questions
+        seen -= {question_key(q) for q in filtered}
+        unseen = filtered
+
+    choice = random.choice(unseen)
+    seen.add(question_key(choice))
+    save_seen(seen)
+    return choice
 
 
 # ---------------------------------------------------------------------------
