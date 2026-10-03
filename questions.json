@@ -37,7 +37,7 @@
   },
   {
     "id": 7,
-    "topic": "DBMS",
+    "topic": "System Design",
     "question": "What is the CAP Theorem and how does it apply to databases?",
     "answer": "1. The 3 Pieces:\n   - Consistency (C): Everyone sees the exact same data at the same time.\n   - Availability (A): The system always answers your request, never throws an error.\n   - Partition Tolerance (P): The system still works even if the network cable breaks\n     between servers.(servers individually still keep working even though they are not\n     connected any more.\n\n2. The Real Choice:\n   - In real life, network cables WILL fail, so you MUST keep (P).\n   - Now choose only ONE:\n     - Pick C (Consistency): If servers cannot talk, reject the request so nobody\n       gets wrong/old data. (Example: Banking, SQL clusters).\n     - Pick A (Availability): Keep answering every user, even if the data is a bit\n       old/stale. (Example: Social media feed, Cassandra)."
   },
@@ -73,7 +73,7 @@
   },
   {
     "id": 13,
-    "topic": "Cloud",
+    "topic": "System Design",
     "question": "What is Redis and what are its common caching patterns?",
     "answer": "1. What is Redis:\n   - In-memory, single-threaded (event loop based), key-value data structure store\n     used primarily as a low-latency cache, message broker, or session store.\n\n2. Core Caching Patterns:\n   - Cache-Aside (Lazy Loading):\n     * Read: Application checks Redis first. On cache hit, returns data. On cache miss,\n       reads from Database, writes result to Redis, then returns.\n     * Write: Application writes directly to the Database, then invalidates/evicts the\n       corresponding key in Redis.\n   - Write-Through:\n     * Application treats cache as the primary store; cache writes immediately to DB in\n       the same synchronous call.\n   - Write-Behind (Write-Back):\n     * Application writes directly to cache; cache batches writes to the Database\n       asynchronously.(High write throughput, but risks data loss on cache crash)."
   },
@@ -109,25 +109,25 @@
   },
   {
     "id": 19,
-    "topic": "Cloud",
+    "topic": "System Design",
     "question": "What is Rate Limiting and what are its common algorithms?",
     "answer": "1. Purpose:\n   - Protects APIs from abuse, DDoS attacks, and resource starvation by capping\n     the number of requests a client can make in a given timeframe.\n\n2. Core Algorithms:\n   - Token Bucket:\n     * Tokens refill at a constant rate up to a max capacity. Each request consumes\n       a token; if empty, the request is rejected (HTTP 429).\n     * Benefit: Allows short, controlled bursts of traffic.\n   - Leaky Bucket:\n     * Requests enter a queue and are processed at a constant, fixed rate (smooths\n       traffic out regardless of incoming spikes).\n   - Fixed Window Counter:\n     * Counts requests in fixed time windows (e.g., 100 req/minute).\n     * If all 100 requests arrive in the first 2 seconds, the server has to process all\n       100 at once, then sits idle for 58 seconds."
   },
   {
     "id": 20,
-    "topic": "DBMS",
+    "topic": "System Design",
     "question": "What is Database Sharding vs Partitioning vs Replication?",
     "answer": "1. Replication:\n   - Copies the exact same database across multiple servers (e.g., 1 Primary, 2 Replicas).\n   - Writes go to the Primary; reads can be distributed to Replicas.\n\n2. Partitioning:\n   - Splits a large table into smaller, distinct sub-tables on the SAME database server\n     (e.g., partition orders table by year).\n   - Reduces query scan times and index size on a single machine.\n\n3. Sharding (Horizontal Partitioning across Nodes):\n   - Splits data rows across multiple separate database servers based on a rule:\n     * Example (Geographic):\n       - Server A stores all India users.\n       - Server B stores all US users.\n       - Server C stores all Europe users.\n   - Solves: Storage and write bottlenecks when one physical server runs out of disk/CPU.\n   - Trade-off: Querying across regions (e.g., global leaderboard) requires hitting\n     multiple servers over the network."
   },
   {
     "id": 21,
-    "topic": "Cloud",
+    "topic": "System Design",
     "question": "What is a Message Queue (e.g., Kafka, RabbitMQ) and why use it?",
     "answer": "1. Core Benefits:\n   - Decoupling: Producers send messages without needing to know consumer status or implementation.\n   - Asynchronous Processing: Offloads slow tasks (e.g., sending emails, video processing)\n     so client requests return immediately.\n\n2. RabbitMQ vs Kafka (The Simple Difference):\n   - RabbitMQ (A Post Office):\n     * Server pushes messages directly to workers.\n     * Deletes the message as soon as a worker finishes it.\n     * Best for: Simple tasks, background jobs (e.g., sending emails/SMS).\n   - Kafka (A Recorded Tape / Diary):\n     * Server writes events to disk in order and never deletes them immediately.\n     * Workers pull data at their own speed and can rewind to re-read old data.\n     * Best for: Massive data streams, activity tracking, event history."
   },
   {
     "id": 22,
-    "topic": "Cloud",
+    "topic": "System Design",
     "question": "What is a Load Balancer and how does it work?",
     "answer": "1. What It Does (Traffic Cop):\n   - Sits in front of your backend servers and shares incoming user traffic\n     so no single server gets overloaded or crashes.\n   - Constantly runs \"health checks\"—if Server 2 dies, it stops sending\n     requests there and routes them to healthy servers.\n\n2. How It Picks a Server (Common Rules):\n   - Round Robin: Takes turns in order (Server 1 -> Server 2 -> Server 3 -> repeat).\n   - Least Connections: Sends the user to whichever server is currently doing\n     the least amount of work."
   },
@@ -151,7 +151,7 @@
   },
   {
     "id": 26,
-    "topic": "Cloud",
+    "topic": "System Design",
     "question": "What is a CDN (Content Delivery Network) and how does it work?",
     "answer": "1. What It Is (Local Corner Stores):\n   - A worldwide network of geographically distributed caching servers (Edge servers)\n     run by providers like Cloudflare or AWS CloudFront.\n\n2. How It Works:\n   - Without CDN: A user in Mumbai requests an image from a main server in New York.\n     The packet travels across the ocean, causing a slow 200ms+ delay.\n   - With CDN: The image is cached on a CDN edge server right in Mumbai. The user\n     downloads it locally in 10ms without bothering the New York server.\n\n3. What Gets Cached:\n   - Static assets: Images, videos, CSS, JavaScript bundles, and downloadable files.\n   - Saves bandwidth, protects the main backend from crashing under heavy traffic,\n     and drastically speeds up page loads."
   },
@@ -169,13 +169,13 @@
   },
   {
     "id": 29,
-    "topic": "Cloud",
+    "topic": "System Design",
     "question": "What is the difference between Monolithic vs Microservices Architecture?",
     "answer": "1. Monolith:\n   - All modules (Auth, Payments, Inventory) packaged and deployed together as a single binary\n     /WAR.\n   - Pros: Simple to develop, deploy, test, and debug locally; zero network call latency between\n           modules.\n   - Cons: Whole system must scale together; a crash in one module can take down the entire\n           application.\n\n2. Microservices:\n   - Application broken into independent, loosely coupled services communicating via REST or\n     Message Queues.\n   - Pros: Independent deployment cycles; each service can scale and use different tech stacks.\n   - Cons: High operational complexity; requires distributed tracing, network resilience, and\n           eventual consistency."
   },
   {
     "id": 30,
-    "topic": "Cloud",
+    "topic": "System Design",
     "question": "What is the Circuit Breaker pattern (e.g., Resilience4j)?",
     "answer": "1. Purpose:\n   - Prevents a failing downstream service from taking down your entire system by failing fast\n     instead of letting threads hang and starve system resources.\n\n2. The 3 States:\n   - Closed (Normal): Requests pass through as usual.\n   - Open (Tripped): When the failure threshold is crossed, requests fail immediately without\n     even trying to call the downstream service. Returns a quick fallback response.\n   - Half-Open (Testing): After a cooldown timeout, allows a small batch of trial requests through\n     to see if the downstream service has recovered."
   },
@@ -451,7 +451,7 @@
   },
   {
     "id": 80,
-    "topic": "Cloud",
+    "topic": "System Design",
     "question": "What is the difference between Stateless and Stateful Architecture?",
     "answer": "1. Stateful Architecture:\n   - The server stores client session data locally in memory between requests.\n   - Consequence: Subsequent requests from the same user **must** hit the exact same server\n     instance (requires sticky sessions on the load balancer).\n   - Failure Risk: If that specific server crashes, the user's session data is lost.\n\n2. Stateless Architecture:\n   - The server stores zero session state; every incoming request must contain all necessary\n     authentication and context data (e.g., a signed JWT in the Authorization header).\n   - Benefits:\n     * Any backend server can handle any request instantly.\n     * Horizontal scaling becomes trivial (load balancers can distribute requests using simple\n       Round Robin)."
   },
