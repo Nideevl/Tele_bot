@@ -30,7 +30,7 @@ if not BOT_TOKEN or not raw_chat_id:
 DEFAULT_CHAT_ID = int(raw_chat_id)
 
 # Topic names must match the "topic" values in questions.json
-ALL_TOPICS = ["OS", "Networking", "Cloud", "Java", "Spring", "OOPs", "DBMS", "SQL", "AI"]
+ALL_TOPICS = ["OS", "Networking", "Cloud", "System Design", "Java", "Spring", "OOPs", "DBMS", "SQL", "AI"]
 
 # Telegram hard limit for a single message
 TELEGRAM_MAX_LEN = 4096
@@ -52,16 +52,17 @@ TOPIC_BADGES = {
     "Networking": "🌐 COMPUTER NETWORKS",
     "DBMS": "🗄️ DATABASE INTERNALS",
     "SQL": "📊 SQL QUERYING",
-    "Cloud": "☁️ CLOUD & DISTRIBUTED",
+    "Cloud": "☁️ CLOUD COMPUTING",
     "OOPs": "🧱 OOP PRINCIPLES",
     "AI": "🤖 AI & EMBEDDINGS",
+    "System Design": "📐 SYSTEM DESIGN",
 }
 
-# Short icons used in the topic picker
 TOPIC_ICONS = {
     "OS": "💻",
     "Networking": "🌐",
     "Cloud": "☁️",
+    "System Design": "📐",
     "Java": "☕",
     "Spring": "🍃",
     "OOPs": "🧱",
@@ -69,7 +70,6 @@ TOPIC_ICONS = {
     "SQL": "📊",
     "AI": "🤖",
 }
-
 
 # ---------------------------------------------------------------------------
 # Quiet hours helpers
@@ -167,9 +167,11 @@ def get_topic_keyboard(chat_id):
     selected_set = user_preferences.get(chat_id, set(ALL_TOPICS))
 
     layout = [
-        ["OS", "Networking", "Cloud"],
-        ["Java", "Spring", "OOPs"],
-        ["DBMS", "SQL", "AI"],
+        ["OS", "Networking"],
+        ["Cloud", "System Design"],
+        ["Java", "Spring"],
+        ["OOPs", "DBMS"],
+        ["SQL", "AI"],
     ]
 
     keyboard = []
