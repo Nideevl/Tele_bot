@@ -622,5 +622,53 @@
     "topic": "Java",
     "question": "What is the difference between ClassNotFoundException and NoClassDefFoundError in Java?",
     "answer": "1. ClassNotFoundException:\n   - Category: Checked Exception (`java.lang.Exception`).\n   - Root Cause: Occurs at runtime when an application attempts to load a class dynamically by\n     string name (e.g., `Class.forName(\"com.mysql.cj.jdbc.Driver\")` or `ClassLoader.loadClass()`),\n     but the class file does not exist on the classpath.\n   - Handled: Must be caught via `try-catch` or declared via `throws`.\n\n2. NoClassDefFoundError:\n   - Category: Fatal Error (`java.lang.Error`).\n   - Root Cause: Occurs when a class was successfully present at compile time (compilation\n     succeeded),\n     but is missing from the classpath when the JVM tries to execute code that references it at\n     runtime.\n   - Typical Scenario: Missing dependency JAR during deployment, or class initialization failure\n     inside a `static` block that caused the class loader to reject it."
+  },
+  {
+    "id": 109,
+    "topic": "Java",
+    "question": "Find the minimum-length subarray whose sum equals a given target.",
+    "answer": "1. Algorithmic Approach (Sliding Window / Two Pointers):\n   - Best when all array elements are positive integers.\n   - Maintain two pointers (`left`, `right`) and a running `current_sum`.\n   - Expand `right` to include elements until `current_sum >= target`.\n   - Once the condition is met, contract from `left` to minimize length while recording the smallest window size, then continue expanding `right`.\n   - Time Complexity: O(N) since each pointer moves across the array at most once.\n   - Space Complexity: O(1) auxiliary space."
+  },
+  {
+    "id": 110,
+    "topic": "Spring",
+    "question": "What is the difference between @Autowired and @Resource in Spring?",
+    "answer": "1. @Autowired (Spring Framework Native):\n   - Package: `org.springframework.beans.factory.annotation.Autowired`.\n   - Wiring Strategy: Injects by **Type** first.\n   - Disambiguation: If multiple beans of the same type exist, requires `@Qualifier(\"beanName\")` to resolve conflicts.\n\n2. @Resource (Jakarta / Java EE Standard):\n   - Package: `jakarta.annotation.Resource` (or `javax.annotation.Resource`).\n   - Wiring Strategy: Injects by **Name** first (matches field name or explicit `name` attribute).\n   - Fallback: If no bean with that specific name exists, falls back to wiring by Type.\n\n3. Standard Practice:\n   - Modern Spring Boot development predominantly standardizes on Constructor Injection rather than relying on either annotation on fields."
+  },
+  {
+    "id": 111,
+    "topic": "SQL",
+    "question": "What is the difference between DELETE, TRUNCATE, and DROP in SQL?",
+    "answer": "1. DELETE (DML - Data Manipulation Language):\n   - Removes rows matching an optional `WHERE` clause.\n   - Operations are logged row-by-row in the transaction log; can be rolled back inside a transaction.\n   - Does NOT reset auto-increment primary key sequences in most engines.\n   - Slowest for clearing large tables due to per-row logging and trigger execution.\n\n2. TRUNCATE (DDL - Data Definition Language):\n   - Empties the entire table by deallocating data pages rather than deleting rows individually.\n   - Minimal logging; cannot be targeted with a `WHERE` condition.\n   - Resets auto-increment sequences back to their seed value.\n   - Much faster than DELETE; does not fire row-level triggers.\n\n3. DROP (DDL - Data Definition Language):\n   - Completely deletes the table schema, definitions, indexes, constraints, and data from disk.\n   - The table ceases to exist entirely in the database catalog."
+  },
+  {
+    "id": 112,
+    "topic": "Spring",
+    "question": "How do you prevent and resolve circular dependencies in Spring Boot?",
+    "answer": "1. What Causes It:\n   - Occurs when Bean A requires Bean B in its constructor, and Bean B requires Bean A (`A -> B -> A`).\n   - Spring fails on startup with `BeanCurrentlyInCreationException`.\n\n2. Architectural Redesign (Best Practice):\n   - Extract the shared responsibility into a distinct third bean (`ServiceC`) that both `ServiceA` and `ServiceB` depend on, breaking the cyclical loop.\n\n3. @Lazy Annotation (Workaround):\n   - Annotate one of the injected constructor parameters with `@Lazy`: `public ServiceA(@Lazy ServiceB serviceB)`\n   - Instructs Spring to inject a dynamic proxy instead of the real bean during startup.\n   - Defers the instantiation of `ServiceB` until a method on it is first executed."
+  },
+  {
+    "id": 113,
+    "topic": "Java",
+    "question": "What are the key features introduced in Java 8?",
+    "answer": "1. Core Functional Programming Additions:\n   - Lambda Expressions: Anonymous functions enabling code to be treated as method arguments.\n   - Functional Interfaces: Interfaces with a Single Abstract Method (SAM), annotated via `@FunctionalInterface`.\n   - Method References: Shorthand syntax (`Class::method`) for referencing existing methods or constructors.\n\n2. APIs and Memory Changes:\n   - Stream API: Functional-style operations for processing collections declaratively with lazy evaluation.\n   - Default and Static Methods in Interfaces: Allows adding method implementations to interfaces without breaking existing implementations.\n   - Optional Class: Container object used to contain not-null objects, preventing `NullPointerException`.\n   - New Date and Time API: Thread-safe, immutable date-time classes under `java.time` (`LocalDate`, `LocalDateTime`).\n   - Metaspace: Replaced PermGen memory space, moving class metadata into native off-heap memory."
+  },
+  {
+    "id": 114,
+    "topic": "Spring",
+    "question": "What is the difference between @Configuration and @Component in Spring?",
+    "answer": "1. @Component:\n   - Marks a standard class as a Spring-managed bean for component scanning.\n   - If a method inside a `@Component` class calls another method defined with `@Bean`, Spring executes it as a plain Java method call, returning a new instance every time (bypasses singleton caching).\n\n2. @Configuration:\n   - Specialized `@Component` used to define bean factories and setup classes.\n   - Spring wraps `@Configuration` classes in a CGLIB runtime proxy.\n   - Inter-bean references: When one `@Bean` method calls another `@Bean` method within the same configuration class, the CGLIB proxy intercepts the call, checks the IoC container, and returns the existing cached singleton bean."
+  },
+  {
+    "id": 115,
+    "topic": "DBMS",
+    "question": "What is the difference between Cascading and Fetching in JPA / Hibernate?",
+    "answer": "1. Fetching (`fetch = FetchType.LAZY` / `EAGER`):\n   - Controls **read** behavior.\n   - Determines *when* and *how* associated child entities are loaded from the database into memory when querying the parent entity.\n\n2. Cascading (`cascade = CascadeType.ALL` / `PERSIST` / `MERGE` / `REMOVE`):\n   - Controls **state transition / write** behavior.\n   - Determines whether entity lifecycle events applied to the parent automatically propagate down to its associated child entities (e.g., saving or deleting an `Order` automatically saves or deletes its `OrderItems`)."
+  },
+  {
+    "id": 116,
+    "topic": "SQL",
+    "question": "How does Index Scan differ from Index Seek in SQL execution plans?",
+    "answer": "1. Index Seek:\n   - Traverses the B-Tree index from root to leaf to locate specific rows directly using a comparison predicate (`=`, `<`, `>`).\n   - Touches only the relevant matching index pages; highly selective and fast (O(log N)).\n   - Indicates optimal index usage for queries targeting specific keys or small ranges.\n\n2. Index Scan:\n   - Scans through every page of the index sequentially from start to finish.\n   - Still avoids reading the physical raw table data if all requested columns exist inside the index (Covering Index), but reads all index entries (O(N)).\n   - Occurs when the query conditions cannot utilize the B-Tree structure (e.g., missing leftmost prefix or low selectivity)."
   }
 ]
