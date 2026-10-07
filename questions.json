@@ -51,7 +51,7 @@
     "id": 9,
     "topic": "DBMS",
     "question": "What is the difference between Optimistic Locking vs Pessimistic Locking?",
-    "answer": "1. Pessimistic Locking:\n   - Principle: Assumes conflicts will happen; locks the target record at the database\n     level the moment it is read until the transaction finishes.\n   - Implementation: Uses `SELECT ... FOR UPDATE` in SQL.\n   - Best For: High-contention environments where conflicts are frequent (e.g., inventory\n     flash sales, banking fund transfers).\n   - Trade-off: Reduces throughput; risks deadlocks and thread starvation while holding locks.\n\n2. Optimistic Locking:\n   - Principle: Assumes conflicts are rare; does not lock records on read.\n   - Implementation: Adds a `version` (or timestamp) column to the table. On update:\n     `UPDATE table SET col = val, version = version + 1 WHERE id = 1 AND version = current_version;`\n     If rows updated == 0, a concurrent update occurred, and the transaction aborts/retries.\n   - Best For: Read-heavy applications with low write contention (e.g., editing user profiles).\n   - Trade-off: High retry overhead if write collisions suddenly spike."
+    "answer": "1. Pessimistic Locking (Physical DB Lock):\n   - Core Idea: 'Assume conflicts WILL happen.' Prevent collisions by blocking others upfront.\n   - How it works: When a transaction reads a row, the database physically locks it (`SELECT ... FOR UPDATE`). Any concurrent transaction trying to read or update that same row is forced to wait in a queue until the first transaction commits or rolls back.\n   - Use Case: High write contention where collisions are expensive or unacceptable (e.g., deducting bank account balances, booking the last flight seat, inventory flash sales).\n   - Drawbacks: Lower throughput, connection thread starvation, and potential deadlocks.\n\n2. Optimistic Locking (Application-Level Version Check):\n   - Core Idea: 'Assume conflicts WON'T happen.' Do not lock rows on read; verify before write.\n   - How it works: Records include a `version` column. When updating, the app checks if the version is unchanged: `UPDATE product SET stock = stock - 1, version = version + 1 WHERE id = 1 AND version = 5;`. If another transaction updated it first, 0 rows match, and the app aborts or retries.\n   - Use Case: Read-heavy systems with rare concurrent writes (e.g., editing user profiles, updating blog posts).\n   - Drawbacks: High retry/rollback cost if collision rate unexpectedly spikes."
   },
   {
     "id": 10,
@@ -670,5 +670,17 @@
     "topic": "SQL",
     "question": "How does Index Scan differ from Index Seek in SQL execution plans?",
     "answer": "1. Index Seek:\n   - Traverses the B-Tree index from root to leaf to locate specific rows directly using a comparison predicate (`=`, `<`, `>`).\n   - Touches only the relevant matching index pages; highly selective and fast (O(log N)).\n   - Indicates optimal index usage for queries targeting specific keys or small ranges.\n\n2. Index Scan:\n   - Scans through every page of the index sequentially from start to finish.\n   - Still avoids reading the physical raw table data if all requested columns exist inside the index (Covering Index), but reads all index entries (O(N)).\n   - Occurs when the query conditions cannot utilize the B-Tree structure (e.g., missing leftmost prefix or low selectivity)."
+  },
+  {
+    "id": 117,
+    "topic": "SQL",
+    "question": "What is the difference between Clustered Index and Non-Clustered Index in SQL?",
+    "answer": "1. Clustered Index:\n   - Physically sorts and stores the actual table data rows on disk in the order of the index key.\n   - A table can have only ONE clustered index (typically assigned automatically to the Primary Key).\n   - Leaf nodes of the B+ Tree contain the actual full data rows.\n\n2. Non-Clustered Index (Secondary Index):\n   - Stored in a separate structure completely distinct from the physical table data rows.\n   - A table can have multiple non-clustered indexes.\n   - Leaf nodes of the B+ Tree contain only the indexed column keys and a pointer (row ID or clustered key) to locate the actual row in the main table."
+  },
+  {
+    "id": 118,
+    "topic": "Spring",
+    "question": "What is the difference between @Valid and @Validated in Spring Boot?",
+    "answer": "1. @Valid (Jakarta Bean Validation standard):\n   - Standard specification annotation (`jakarta.validation.Valid`).\n   - Triggers validation checks on method arguments (such as `@RequestBody`) inside controller endpoints.\n   - Does not support validation groups.\n   - Required to enable nested validation on child objects within request payloads.\n\n2. @Validated (Spring Framework native):\n   - Spring-specific annotation (`org.springframework.validation.annotation.Validated`).\n   - Supports Validation Groups to apply different validation constraints based on scenarios (e.g., creating vs updating a resource).\n   - Applied at class level on `@Service` or `@RestController` classes to validate method parameters directly (such as `@PathVariable` and `@RequestParam`)."
   }
 ]
