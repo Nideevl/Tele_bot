@@ -30,7 +30,7 @@ if not BOT_TOKEN or not raw_chat_id:
 DEFAULT_CHAT_ID = int(raw_chat_id)
 
 # Topic names must match the "topic" values in questions.json
-ALL_TOPICS = ["OS", "Networking", "Cloud", "System Design", "Java", "Spring", "OOPs", "DBMS", "SQL", "AI"]
+ALL_TOPICS = ["OS", "Networking", "Cloud", "System Design", "Java", "Spring", "OOPs", "DBMS", "SQL", "AI", "DevOps"]
 
 # Telegram hard limit for a single message
 TELEGRAM_MAX_LEN = 4096
@@ -56,6 +56,7 @@ TOPIC_BADGES = {
     "OOPs": "🧱 OOP PRINCIPLES",
     "AI": "🤖 AI & EMBEDDINGS",
     "System Design": "📐 SYSTEM DESIGN",
+    "DevOps": "⚙️ DEVOPS & CI/CD",
 }
 
 TOPIC_ICONS = {
@@ -69,6 +70,7 @@ TOPIC_ICONS = {
     "DBMS": "🗄️",
     "SQL": "📊",
     "AI": "🤖",
+    "DevOps": "⚙️",
 }
 
 # ---------------------------------------------------------------------------
@@ -171,7 +173,7 @@ def get_topic_keyboard(chat_id):
         ["Cloud", "System Design"],
         ["Java", "Spring"],
         ["OOPs", "DBMS"],
-        ["SQL", "AI"],
+        ["SQL", "AI", "DevOps"],
     ]
 
     keyboard = []
