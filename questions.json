@@ -682,5 +682,419 @@
     "topic": "Spring",
     "question": "What is the difference between @Valid and @Validated in Spring Boot?",
     "answer": "1. @Valid (Jakarta Bean Validation standard):\n   - Standard specification annotation (`jakarta.validation.Valid`).\n   - Triggers validation checks on method arguments (such as `@RequestBody`) inside controller endpoints.\n   - Does not support validation groups.\n   - Required to enable nested validation on child objects within request payloads.\n\n2. @Validated (Spring Framework native):\n   - Spring-specific annotation (`org.springframework.validation.annotation.Validated`).\n   - Supports Validation Groups to apply different validation constraints based on scenarios (e.g., creating vs updating a resource).\n   - Applied at class level on `@Service` or `@RestController` classes to validate method parameters directly (such as `@PathVariable` and `@RequestParam`)."
+  },
+    {
+    "id": 119,
+    "topic": "Networking",
+    "question": "What are the main API styles (REST, SOAP, GraphQL, gRPC) and when do you pick each?",
+    "answer": "1. REST:\n   - Resource-based (URLs = nouns) over HTTP, usually JSON. Uses standard methods (GET, POST, PUT, DELETE).\n   - Pick for: public APIs, CRUD-style services, web/mobile clients. Simple, cacheable, widely understood.\n\n2. SOAP:\n   - XML-only protocol with a strict contract (WSDL) and built-in standards (WS-Security).\n   - Pick for: enterprise/banking/legacy integrations that need formal contracts and strict security.\n\n3. GraphQL:\n   - Single endpoint; the client specifies exactly which fields it wants.\n   - Pick for: many different clients (web, mobile) needing different shapes of the same data.\n\n4. gRPC:\n   - Binary Protocol Buffers over HTTP/2 with generated client/server code and streaming.\n   - Pick for: internal service-to-service calls in microservices where low latency matters.\n\n5. Rule of Thumb:\n   - External/public API -> REST. Internal microservice calls -> gRPC (or REST). Flexible client queries -> GraphQL. Legacy enterprise partner -> SOAP."
+  },
+  {
+    "id": 120,
+    "topic": "Networking",
+    "question": "What are the REST constraints and what makes an API truly RESTful?",
+    "answer": "1. The 6 REST Constraints:\n   - Client-Server: UI and data storage are separated and evolve independently.\n   - Stateless: Every request carries all information needed; the server stores no client session state.\n   - Cacheable: Responses must declare whether they can be cached.\n   - Uniform Interface: Resources identified by URIs, manipulated through representations (JSON), self-descriptive messages, and HATEOAS.\n   - Layered System: Client cannot tell whether it talks to the real server or an intermediary (gateway, load balancer, cache).\n   - Code on Demand (optional): Server can send executable code (e.g., JavaScript) to the client.\n\n2. What Makes It \"Truly\" RESTful:\n   - HATEOAS: Responses contain links telling the client what it can do next (e.g., a link to cancel an order).\n   - Richardson Maturity Model: Level 0 (single endpoint) -> Level 1 (resources) -> Level 2 (HTTP verbs + status codes) -> Level 3 (HATEOAS).\n   - Most real-world \"REST APIs\" stop at Level 2."
+  },
+  {
+    "id": 121,
+    "topic": "Networking",
+    "question": "What is SOAP (WSDL, envelope) and how does it differ from REST?",
+    "answer": "1. What is SOAP:\n   - Simple Object Access Protocol: a strict XML-based messaging protocol, usually over HTTP (can also use SMTP, etc.).\n\n2. Message Structure (Envelope):\n   - Envelope: Root element wrapping the whole message.\n   - Header (optional): Metadata such as security tokens or transaction info.\n   - Body: The actual request/response payload.\n   - Fault (inside Body): Standardized error information.\n\n3. WSDL (Web Services Description Language):\n   - XML contract describing operations, message formats, data types, and the service endpoint.\n   - Clients can auto-generate stubs from it.\n\n4. SOAP vs REST:\n   - Format: SOAP is XML only; REST commonly uses JSON (also XML, text).\n   - Contract: SOAP has a strict WSDL contract; REST is a style with no mandatory contract (OpenAPI is optional).\n   - Standards: SOAP has built-in WS-Security and WS-AtomicTransaction; REST relies on HTTPS, OAuth2, etc.\n   - Weight: SOAP is verbose and slower; REST is lightweight and cacheable.\n   - Use SOAP for: legacy enterprise and banking integrations. Use REST for: most modern web/mobile APIs."
+  },
+  {
+    "id": 122,
+    "topic": "Networking",
+    "question": "What is GraphQL and how does it solve over-fetching and under-fetching?",
+    "answer": "1. What is GraphQL:\n   - A query language and runtime for APIs. A single endpoint (e.g., /graphql) backed by a strongly typed schema.\n   - Operations: Query (read), Mutation (write), Subscription (real-time updates).\n\n2. The Problems in REST:\n   - Over-fetching: GET /users/1 returns 30 fields when the client needs only name and email.\n   - Under-fetching: One endpoint does not return enough, so the client makes multiple calls\n     (user, then their orders, then order items).\n\n3. How GraphQL Solves It:\n   - The client lists exactly the fields it needs, including nested relations, in one request:\n     `{ user(id: 1) { name orders { id total } } }`\n   - The response mirrors the query shape: no extra fields, one round trip.\n\n4. Trade-offs:\n   - HTTP caching is harder (usually POST to one URL).\n   - Server-side N+1 query problem (solved with batching, e.g., DataLoader).\n   - Need query depth/complexity limits to prevent abusive queries."
+  },
+  {
+    "id": 123,
+    "topic": "Networking",
+    "question": "What is gRPC and Protocol Buffers, and why is it faster than REST/JSON?",
+    "answer": "1. gRPC:\n   - Open-source RPC framework from Google. You define services and messages in a `.proto` file,\n     and code for client and server is generated in many languages.\n\n2. Protocol Buffers (Protobuf):\n   - Binary serialization format with a strict schema. Fields are encoded by number, not by name.\n\n3. Why It Is Faster Than REST/JSON:\n   - Binary payload: Much smaller and faster to serialize/parse than text JSON.\n   - HTTP/2: Multiplexing many calls over one connection, header compression.\n   - Streaming: Supports server, client, and bidirectional streaming natively.\n   - Strongly typed generated code: No manual parsing, fewer runtime errors.\n\n4. Limitations:\n   - Not human-readable (harder to debug with curl/browser).\n   - Browsers cannot call gRPC directly (needs gRPC-Web proxy).\n   - Best suited for internal service-to-service communication."
+  },
+  {
+    "id": 124,
+    "topic": "Networking",
+    "question": "What are Webhooks and how do they differ from Polling?",
+    "answer": "1. Webhook (Push / Reverse API):\n   - You register a callback URL with a provider. When an event occurs, the provider sends an\n     HTTP POST to your URL with the event data.\n   - Example: Payment gateway calls your /payment-success endpoint when a payment completes.\n\n2. Polling (Pull):\n   - Your client repeatedly asks the provider \"any updates?\" on an interval.\n   - Wasteful: most requests return nothing, and updates are delayed up to the polling interval.\n\n3. Key Differences:\n   - Who initiates: Webhook = provider; Polling = you.\n   - Latency: Webhook is near real-time; Polling depends on interval.\n   - Efficiency: Webhook sends only when something happens.\n\n4. Webhook Best Practices:\n   - Verify the signature (HMAC) to confirm the sender is genuine.\n   - Respond with 2xx quickly and process asynchronously.\n   - Make the handler idempotent because providers retry on failure (duplicates possible)."
+  },
+  {
+    "id": 125,
+    "topic": "Networking",
+    "question": "What is WebRTC?",
+    "answer": "1. What It Is:\n   - A browser-native technology for real-time peer-to-peer audio, video, and data transfer\n     without plugins. Used in video calls, screen sharing, and P2P file transfer.\n\n2. Main APIs:\n   - getUserMedia: Access camera and microphone.\n   - RTCPeerConnection: Manages the peer connection and media streams.\n   - RTCDataChannel: Peer-to-peer arbitrary data channel.\n\n3. How a Connection Is Set Up:\n   - Signaling: A separate server (often WebSocket) exchanges SDP offer/answer and ICE candidates.\n     WebRTC itself does not define signaling.\n   - STUN server: Helps a peer discover its public IP/port (NAT traversal).\n   - TURN server: Relays traffic when a direct peer-to-peer path is impossible.\n\n4. Transport:\n   - Media is sent mostly over UDP, encrypted (DTLS/SRTP), for low latency."
+  },
+  {
+    "id": 126,
+    "topic": "Networking",
+    "question": "How does the WebSocket handshake work and how do you scale WebSockets across servers?",
+    "answer": "1. Handshake (HTTP Upgrade):\n   - Client sends an HTTP GET with headers: `Upgrade: websocket`, `Connection: Upgrade`,\n     `Sec-WebSocket-Key: <random base64>`, `Sec-WebSocket-Version: 13`.\n   - Server replies `101 Switching Protocols` with `Sec-WebSocket-Accept` (derived from the client key).\n   - The same TCP connection now carries WebSocket frames (full-duplex) instead of HTTP.\n\n2. Scaling Challenge:\n   - Connections are long-lived and stateful: a user is connected to ONE specific server.\n   - If User A (Server 1) messages User B (Server 2), Server 1 does not hold B's connection.\n\n3. Solution (Pub/Sub Backplane):\n   - Every server subscribes to a shared broker (Redis Pub/Sub, Kafka, or RabbitMQ).\n   - A server publishes the message to the broker; the server holding the target connection\n     receives it and pushes it down the socket.\n   - Keep a user-to-server mapping (e.g., in Redis) for presence/routing.\n   - Spring: STOMP with an external broker relay (e.g., RabbitMQ).\n\n4. Other Points:\n   - Load balancer must support WebSocket upgrade; use heartbeats/ping-pong to detect dead connections."
+  },
+  {
+    "id": 127,
+    "topic": "Networking",
+    "question": "What is the difference between HTTP/1.1 and HTTP/2? (HTTP/3 in one line)",
+    "answer": "1. HTTP/1.1:\n   - Text-based protocol. One request in flight per connection at a time, so responses queue\n     behind each other (head-of-line blocking at HTTP level).\n   - Browsers work around this by opening several parallel TCP connections per host.\n   - Keep-alive allows connection reuse.\n\n2. HTTP/2:\n   - Binary framing instead of text.\n   - Multiplexing: Many requests/responses interleaved concurrently over ONE TCP connection.\n   - HPACK header compression: Repeated headers are not resent in full.\n   - Stream prioritization. (Server push exists in the spec but is largely deprecated in practice.)\n   - Still runs on TCP, so a lost packet can stall all streams (TCP-level head-of-line blocking).\n\n3. HTTP/3 (One Line):\n   - Runs over QUIC (on UDP), removing TCP head-of-line blocking and giving faster connection setup."
+  },
+  {
+    "id": 128,
+    "topic": "Networking",
+    "question": "What is the difference between Cookies, Sessions, and localStorage?",
+    "answer": "1. Cookies:\n   - Small key-value data (~4KB) stored in the browser and sent automatically with every request\n     to the matching domain.\n   - Important flags: `HttpOnly` (JS cannot read it), `Secure` (HTTPS only), `SameSite` (CSRF defense),\n     plus expiry.\n\n2. Sessions:\n   - Data stored on the SERVER, identified by a session ID.\n   - The session ID itself is usually carried in a cookie (e.g., JSESSIONID).\n   - Sensitive data stays server-side; makes the server stateful.\n\n3. localStorage:\n   - Browser-only storage (~5MB per origin), persists until cleared, never sent automatically with requests.\n   - Readable by any JavaScript on the page, so vulnerable to XSS (do not store tokens carelessly).\n   - sessionStorage is the same but cleared when the tab closes.\n\n4. Quick Pick:\n   - Auth session ID -> HttpOnly Secure cookie. UI preferences -> localStorage. Sensitive state -> server session."
+  },
+  {
+    "id": 129,
+    "topic": "Networking",
+    "question": "How does OAuth2 (Authorization Code flow) work, how does OIDC differ, and what are Access vs Refresh tokens?",
+    "answer": "1. OAuth2 Roles:\n   - Resource Owner (user), Client (the app), Authorization Server (issues tokens), Resource Server (the API).\n   - Purpose: Delegated authorization, so an app can access your data without getting your password.\n\n2. Authorization Code Flow:\n   - Step 1: Client redirects the user to the Authorization Server (client_id, redirect_uri, scope, state).\n   - Step 2: User logs in and grants consent.\n   - Step 3: Authorization Server redirects back to the client with a short-lived authorization code.\n   - Step 4: Client's backend exchanges the code (plus client secret, or PKCE code_verifier) for tokens\n     at the token endpoint.\n   - Step 5: Client calls the Resource Server with the access token.\n   - PKCE is used for public clients (SPAs, mobile) that cannot keep a secret.\n\n3. OIDC (OpenID Connect):\n   - An identity layer built on top of OAuth2. Adds an ID Token (a JWT with user identity claims),\n     the `openid` scope, and a UserInfo endpoint.\n   - OAuth2 = authorization (\"what can this app access\"); OIDC = authentication (\"who is the user\").\n\n4. Access vs Refresh Token:\n   - Access Token: Short-lived, sent to the API on every call.\n   - Refresh Token: Long-lived, sent only to the Authorization Server to get a new access token;\n     must be stored securely and can be revoked or rotated."
+  },
+  {
+    "id": 130,
+    "topic": "Networking",
+    "question": "How does HTTP caching work (Cache-Control, ETag, 304)?",
+    "answer": "1. Cache-Control (Freshness):\n   - `max-age=N`: Response is fresh for N seconds; browser serves it from cache without contacting the server.\n   - `no-cache`: May store, but must revalidate with the server before every reuse.\n   - `no-store`: Never store (sensitive data).\n   - `public` / `private`: Shared caches (CDN) allowed vs browser-only cache.\n\n2. Validation (After It Becomes Stale):\n   - Server sends an `ETag` (fingerprint/version of the content) with the response.\n   - Client later sends `If-None-Match: <etag>`.\n   - If unchanged, server replies `304 Not Modified` with no body (saves bandwidth); client reuses its cached copy.\n   - If changed, server replies `200 OK` with the new body and a new ETag.\n   - `Last-Modified` / `If-Modified-Since` works the same way using timestamps."
+  },
+  {
+    "id": 131,
+    "topic": "Java",
+    "question": "List vs Set vs Map: when do you use which?",
+    "answer": "1. List (Ordered, Allows Duplicates):\n   - Access by index. Implementations: ArrayList (default choice), LinkedList.\n   - Use when: Order matters or duplicates are allowed (e.g., list of orders in sequence).\n\n2. Set (Unique Elements Only):\n   - HashSet: No order, fastest. LinkedHashSet: Insertion order. TreeSet: Sorted order.\n   - Use when: You need uniqueness or fast \"does it exist\" checks (e.g., unique emails).\n\n3. Map (Key -> Value, Unique Keys):\n   - Not part of the Collection interface. HashMap, LinkedHashMap, TreeMap.\n   - Use when: You look up values by a key (e.g., userId -> User)."
+  },
+  {
+    "id": 132,
+    "topic": "Java",
+    "question": "What is the difference between HashMap, Hashtable, LinkedHashMap, and TreeMap? (PriorityQueue in one line)",
+    "answer": "1. HashMap:\n   - Not thread-safe. Allows one null key and multiple null values. O(1) average get/put. No ordering.\n\n2. Hashtable:\n   - Legacy class; every method is synchronized (slow). Does NOT allow null keys or values.\n   - Prefer ConcurrentHashMap for thread safety.\n\n3. LinkedHashMap:\n   - HashMap plus a doubly linked list, so it preserves insertion order (or access order when\n     configured, which is the basis of an LRU cache).\n\n4. TreeMap:\n   - Red-Black tree; keys kept sorted (natural order via Comparable, or a Comparator).\n   - O(log n) operations. No null key with natural ordering.\n\n5. PriorityQueue (One Line):\n   - Binary min-heap by default: poll() always returns the smallest element in O(log n);\n     iteration order is not fully sorted."
+  },
+  {
+    "id": 133,
+    "topic": "Java",
+    "question": "How do you create an immutable class in Java?",
+    "answer": "1. Rules:\n   - Declare the class `final` (so it cannot be subclassed and altered).\n   - Make all fields `private final`.\n   - Set all values through the constructor only; provide no setters.\n   - For mutable fields (List, Date, arrays), make defensive copies in the constructor AND in getters.\n   - Do not expose methods that modify internal state.\n\n2. Example:\n   ```java\n   public final class Order {\n       private final int id;\n       private final List<String> items;\n\n       public Order(int id, List<String> items) {\n           this.id = id;\n           this.items = new ArrayList<>(items);              // defensive copy\n       }\n       public int getId() { return id; }\n       public List<String> getItems() {\n           return Collections.unmodifiableList(items);       // no leaking internal list\n       }\n   }\n   ```\n\n3. Why It Matters:\n   - Inherently thread-safe, safe as HashMap keys, easy to reason about (like String).\n   - Modern shortcut: Java `record` creates an immutable data carrier (shallow immutability)."
+  },
+  {
+    "id": 134,
+    "topic": "Java",
+    "question": "Is Java pass-by-value or pass-by-reference?",
+    "answer": "1. Answer:\n   - Java is ALWAYS pass-by-value.\n\n2. Primitives:\n   - A copy of the value is passed; changing it inside the method does not affect the caller.\n\n3. Objects:\n   - The value of the REFERENCE (the address) is copied and passed.\n   - Both the caller and the method hold separate reference variables pointing to the same object.\n   - Mutating the object through the reference (e.g., `list.add(1)`) IS visible to the caller.\n   - Reassigning the parameter (`param = new Object()`) only changes the local copy; the caller's\n     reference is unaffected.\n\n4. Example:\n   ```java\n   void change(StringBuilder sb) {\n       sb.append(\"X\");            // visible to caller (same object)\n       sb = new StringBuilder();  // NOT visible to caller (local reference changed)\n   }\n   ```"
+  },
+  {
+    "id": 135,
+    "topic": "Java",
+    "question": "What are Autoboxing and the Integer Cache (-128 to 127, == trap)?",
+    "answer": "1. Autoboxing / Unboxing:\n   - Autoboxing: Compiler automatically converts a primitive to its wrapper (`int` -> `Integer`),\n     internally via `Integer.valueOf()`.\n   - Unboxing: Wrapper back to primitive. Unboxing a null wrapper throws NullPointerException.\n\n2. Integer Cache:\n   - `Integer.valueOf()` returns cached shared objects for values from -128 to 127.\n   - Outside that range, it creates a new object each time.\n\n3. The == Trap:\n   ```java\n   Integer a = 127, b = 127;\n   System.out.println(a == b);       // true  (same cached object)\n   Integer c = 128, d = 128;\n   System.out.println(c == d);       // false (two different objects)\n   System.out.println(c.equals(d));  // true\n   ```\n   - Rule: Always compare wrapper objects with `.equals()`, never `==`."
+  },
+  {
+    "id": 136,
+    "topic": "Java",
+    "question": "What are Generics and Type Erasure?",
+    "answer": "1. Generics:\n   - Let classes and methods work with type parameters (`List<String>`), giving compile-time type\n     safety and removing manual casts.\n\n2. Type Erasure:\n   - The compiler removes the generic type information after checking. Type parameters are replaced\n     by their bound (Object if unbounded), and casts are inserted where needed.\n   - At runtime, `List<String>` and `List<Integer>` are the same class (`List`).\n\n3. Consequences of Erasure:\n   - Cannot do `new T()`, `new T[10]`, or `instanceof List<String>`.\n   - Cannot use primitives as type arguments (`List<int>` is invalid; use `List<Integer>`).\n   - Cannot overload methods that differ only by generic type argument.\n\n4. Wildcards (PECS):\n   - `? extends T`: Producer, you can read from it.\n   - `? super T`: Consumer, you can write to it."
+  },
+  {
+    "id": 137,
+    "topic": "Java",
+    "question": "What is Reflection and where is it used (Spring, Hibernate)? (custom annotations in one line)",
+    "answer": "1. What It Is:\n   - The `java.lang.reflect` API lets code inspect and manipulate classes, methods, fields, and\n     constructors at runtime, even private ones (via `setAccessible(true)`).\n\n2. Where It Is Used:\n   - Spring: Scans classes for annotations (`@Component`, `@Autowired`), creates beans, injects dependencies.\n   - Hibernate/JPA: Instantiates entities and reads/writes their fields when mapping rows.\n   - Jackson (JSON mapping), JUnit/Mockito, and serialization libraries.\n\n3. Costs:\n   - Slower than direct calls, bypasses compile-time type checks, and breaks encapsulation.\n   - Java 9+ modules can restrict reflective access.\n\n4. Custom Annotations (One Line):\n   - Declare with `@interface` and `@Retention(RetentionPolicy.RUNTIME)`, then read it using\n     `method.getAnnotation(MyAnno.class)` via reflection."
+  },
+  {
+    "id": 138,
+    "topic": "Java",
+    "question": "What is Serialization and transient? (serialVersionUID in one line)",
+    "answer": "1. Serialization:\n   - Converting an object's state into a byte stream (for files, network, caching) and back\n     (deserialization), using `ObjectOutputStream` / `ObjectInputStream`.\n   - The class must implement the `Serializable` marker interface.\n\n2. transient:\n   - Fields marked `transient` are skipped during serialization and get default values\n     (null, 0, false) after deserialization. Use for passwords, caches, non-serializable fields.\n   - `static` fields are also not serialized (they belong to the class, not the object).\n\n3. serialVersionUID (One Line):\n   - A version ID of the class; if the sender's and receiver's IDs differ, deserialization throws\n     `InvalidClassException`, so declare it explicitly."
+  },
+  {
+    "id": 139,
+    "topic": "Java",
+    "question": "What is the difference between JDK, JRE, and JVM, and what do the JIT and ClassLoader do?",
+    "answer": "1. JVM (Java Virtual Machine):\n   - Executes bytecode (.class). Platform-specific, which is what makes Java \"write once, run anywhere\".\n\n2. JRE (Java Runtime Environment):\n   - JVM + core class libraries needed to RUN Java programs.\n\n3. JDK (Java Development Kit):\n   - JRE + development tools (javac compiler, jar, jdb). Needed to DEVELOP Java programs.\n   - Relationship: JDK contains JRE, which contains JVM.\n\n4. Flow:\n   - `.java` --javac--> `.class` bytecode --ClassLoader--> JVM executes it.\n\n5. ClassLoader:\n   - Loads classes into memory lazily, when first needed.\n   - Hierarchy: Bootstrap (core Java classes) -> Platform -> Application (your classpath).\n   - Parent Delegation: A loader first asks its parent to load the class before trying itself.\n\n6. JIT (Just-In-Time) Compiler:\n   - The JVM starts by interpreting bytecode; frequently executed (\"hot\") code is compiled to native\n     machine code at runtime for speed (tiered compilation with C1 and C2 compilers)."
+  },
+  {
+    "id": 140,
+    "topic": "Java",
+    "question": "How do you implement a thread-safe Singleton? (enum version in one line)",
+    "answer": "1. Double-Checked Locking:\n   ```java\n   public class Singleton {\n       private static volatile Singleton instance;\n       private Singleton() {}\n       public static Singleton getInstance() {\n           if (instance == null) {                      // 1st check (no lock)\n               synchronized (Singleton.class) {\n                   if (instance == null) {              // 2nd check (with lock)\n                       instance = new Singleton();\n                   }\n               }\n           }\n           return instance;\n       }\n   }\n   ```\n   - `volatile` is mandatory: it prevents instruction reordering so another thread never sees a\n     partially constructed object.\n\n2. Bill Pugh (Static Holder) Pattern:\n   ```java\n   public class Singleton {\n       private Singleton() {}\n       private static class Holder { static final Singleton INSTANCE = new Singleton(); }\n       public static Singleton getInstance() { return Holder.INSTANCE; }\n   }\n   ```\n   - Lazy and thread-safe because class loading is thread-safe; no explicit locking needed.\n\n3. Enum Version (One Line):\n   - `public enum Singleton { INSTANCE; }` is thread-safe and also safe against reflection and\n     serialization attacks."
+  },
+  {
+    "id": 141,
+    "topic": "Java",
+    "question": "What changed after Java 8 (var, records, text blocks, switch expressions, virtual threads)?",
+    "answer": "1. Language Features by Version:\n   - Java 10: `var` for local variable type inference (`var list = new ArrayList<String>();`).\n   - Java 14: Switch expressions (`->` arms that return a value, no fall-through).\n   - Java 15: Text blocks (`\"\"\"` multi-line strings) finalized.\n   - Java 16: Records (concise immutable data classes) and pattern matching for `instanceof`.\n   - Java 17: Sealed classes (restrict which classes can extend a type).\n   - Java 21: Virtual threads (Project Loom) finalized; pattern matching for switch.\n\n2. Other Useful Additions:\n   - Java 9: `List.of()`, `Map.of()` immutable factory methods, module system.\n   - Java 11: Built-in `HttpClient`, `String` helpers like `isBlank()`.\n\n3. LTS Releases:\n   - 8, 11, 17, 21, 25 (Long-Term Support versions most companies run)."
+  },
+  {
+    "id": 142,
+    "topic": "Java",
+    "question": "How do you implement Producer-Consumer (wait/notify vs BlockingQueue)?",
+    "answer": "1. Problem:\n   - Producers add items to a shared bounded buffer; consumers remove them. Producers must wait\n     when it is full, consumers must wait when it is empty.\n\n2. Approach 1: wait/notify (Manual):\n   - Inside `synchronized` on the shared queue:\n     * Producer: `while (queue.size() == capacity) queue.wait();` then add, then `notifyAll()`.\n     * Consumer: `while (queue.isEmpty()) queue.wait();` then remove, then `notifyAll()`.\n   - Always use `while`, not `if`, because of spurious wakeups.\n\n3. Approach 2: BlockingQueue (Preferred):\n   ```java\n   BlockingQueue<Integer> queue = new ArrayBlockingQueue<>(10);\n   // Producer thread:  queue.put(item);    // blocks if full\n   // Consumer thread:  queue.take();       // blocks if empty\n   ```\n   - The queue handles all locking and waiting internally; less code, fewer bugs."
+  },
+  {
+    "id": 143,
+    "topic": "OS",
+    "question": "What is the difference between Mutex and Semaphore?",
+    "answer": "1. Mutex (Mutual Exclusion Lock):\n   - Allows exactly ONE thread into a critical section at a time.\n   - Has ownership: only the thread that locked it can unlock it.\n   - Java equivalents: `synchronized`, `ReentrantLock`.\n\n2. Semaphore:\n   - Holds a counter of permits. `acquire()` (wait/P) decrements, `release()` (signal/V) increments.\n   - Counting semaphore allows N threads at the same time (e.g., limit to 5 concurrent DB connections).\n   - No ownership: any thread can release a permit, so it can also be used for signaling between threads.\n   - Java: `java.util.concurrent.Semaphore`.\n\n3. Key Difference:\n   - Mutex = locking mechanism for exclusive access. Semaphore = signaling / resource-count mechanism.\n   - A binary semaphore (1 permit) behaves like a mutex but without ownership."
+  },
+  {
+    "id": 144,
+    "topic": "OS",
+    "question": "What is a Race Condition and a Critical Section?",
+    "answer": "1. Race Condition:\n   - A bug where the result depends on the unpredictable timing/interleaving of threads accessing\n     shared data.\n   - Example: `count++` is three steps (read, add, write). Two threads can both read 5 and both\n     write 6, losing one update.\n\n2. Critical Section:\n   - The part of code that accesses a shared resource and must be executed by only ONE thread at a time.\n\n3. Requirements for a Correct Solution:\n   - Mutual Exclusion: Only one thread inside at a time.\n   - Progress: If no one is inside, a waiting thread must be allowed in without indefinite delay.\n   - Bounded Waiting: No thread waits forever.\n\n4. Fixes in Java:\n   - `synchronized`, `ReentrantLock`, atomic classes (`AtomicInteger`), or thread-safe collections."
+  },
+  {
+    "id": 145,
+    "topic": "OS",
+    "question": "What are the CPU Scheduling algorithms (FCFS, SJF, Round Robin, Priority)?",
+    "answer": "1. FCFS (First-Come, First-Served):\n   - Non-preemptive; processes run in arrival order.\n   - Problem: Convoy effect, where short jobs wait behind one long job.\n\n2. SJF (Shortest Job First):\n   - Runs the process with the smallest CPU burst next. Gives the minimum average waiting time.\n   - Problem: Starvation of long jobs; burst time must be predicted.\n   - Preemptive version: SRTF (Shortest Remaining Time First).\n\n3. Round Robin:\n   - Preemptive; each process gets a fixed time quantum, then goes to the back of the queue.\n   - Fair with good response time. Too large a quantum behaves like FCFS; too small causes heavy\n     context-switch overhead.\n\n4. Priority Scheduling:\n   - Highest-priority process runs first (preemptive or non-preemptive).\n   - Problem: Starvation of low-priority processes. Fix: Aging (gradually raise the priority of waiting processes)."
+  },
+  {
+    "id": 146,
+    "topic": "OS",
+    "question": "What is Starvation and how does it differ from Deadlock?",
+    "answer": "1. Starvation:\n   - A process waits indefinitely because other (usually higher-priority) processes keep getting\n     the resource first.\n   - The system as a whole still makes progress; only the starved process does not.\n   - Fix: Aging, fair locks/queues.\n\n2. Deadlock:\n   - A set of processes are all blocked, each waiting for a resource held by another in the set.\n   - NO process in that set can ever proceed.\n   - Fix: Lock ordering, timeouts, breaking one of the 4 Coffman conditions.\n\n3. Key Difference:\n   - Starvation = \"someone else always goes first\" (may eventually end). Deadlock = \"everyone is\n     stuck waiting on each other\" (never ends without intervention)."
+  },
+  {
+    "id": 147,
+    "topic": "OS",
+    "question": "What is the difference between Paging and Segmentation?",
+    "answer": "1. Paging:\n   - Divides memory into fixed-size pages (virtual) and frames (physical).\n   - Invisible to the programmer; the OS manages it with a page table.\n   - No external fragmentation, but can cause internal fragmentation (unused space in the last page).\n\n2. Segmentation:\n   - Divides memory into variable-size logical segments (code, stack, heap, data) matching how the\n     programmer views the program.\n   - A segment table stores base and limit for each segment.\n   - Allows per-segment protection and sharing, but suffers from external fragmentation.\n\n3. Key Difference:\n   - Paging = fixed-size physical division for efficient memory use. Segmentation = variable-size\n     logical division for a programmer-friendly view.\n   - Modern systems primarily rely on paging (sometimes combined with segmentation)."
+  },
+  {
+    "id": 148,
+    "topic": "OS",
+    "question": "What is the difference between User Mode and Kernel Mode, and what is a System Call?",
+    "answer": "1. User Mode:\n   - Restricted mode where applications run. Cannot directly access hardware or other processes' memory.\n   - A crash affects only that application.\n\n2. Kernel Mode:\n   - Privileged mode where the OS kernel runs, with full access to hardware and all memory.\n\n3. System Call:\n   - The controlled gateway for a user program to request a kernel service\n     (file read/write, create process, network I/O).\n   - Flow: Program invokes the call -> trap/software interrupt -> CPU switches to kernel mode ->\n     kernel performs the work -> returns to user mode.\n   - Example: `FileInputStream.read()` in Java eventually triggers the OS `read()` system call."
+  },
+  {
+    "id": 149,
+    "topic": "DBMS",
+    "question": "What is a Composite Index and the Leftmost Prefix rule? (covering index in one line)",
+    "answer": "1. Composite Index:\n   - An index on multiple columns, e.g., `INDEX(a, b, c)`. Entries are sorted by `a`, then `b` within\n     the same `a`, then `c`.\n\n2. Leftmost Prefix Rule:\n   - The index can be used only if the query filters on a leftmost prefix of its columns.\n   - Usable: `a`, `a + b`, `a + b + c`.\n   - NOT usable for seeking: `b` alone, `c` alone, `b + c` (the leading column is missing).\n   - A range condition on a column (e.g., `a = 1 AND b > 5`) stops later columns (`c`) from being\n     used for seeking.\n\n3. Column Order Guidance:\n   - Put columns used with equality first, range columns after, and consider selectivity.\n\n4. Covering Index (One Line):\n   - When all columns a query needs are inside the index, the database answers from the index alone\n     without touching the table rows."
+  },
+  {
+    "id": 150,
+    "topic": "DBMS",
+    "question": "What is MVCC and how does it work?",
+    "answer": "1. Idea:\n   - Multi-Version Concurrency Control keeps multiple versions of a row so each transaction reads\n     a consistent snapshot of the data.\n   - Readers do not block writers and writers do not block readers.\n\n2. How It Works:\n   - PostgreSQL: Each update creates a new row version stamped with transaction IDs (xmin/xmax).\n     Old versions are cleaned by VACUUM.\n   - MySQL InnoDB: Latest row is in the table; older versions are rebuilt from the undo log\n     using hidden transaction ID columns.\n   - A transaction sees only versions committed before its snapshot was taken.\n\n3. Link to Isolation Levels:\n   - Read Committed: A new snapshot per statement.\n   - Repeatable Read: One snapshot for the whole transaction.\n\n4. Note:\n   - Two writers updating the SAME row still conflict and must wait or fail."
+  },
+  {
+    "id": 151,
+    "topic": "DBMS",
+    "question": "How do you use EXPLAIN to optimize a slow query?",
+    "answer": "1. What EXPLAIN Does:\n   - Shows the execution plan the database will use. `EXPLAIN ANALYZE` (PostgreSQL, MySQL 8.0.18+)\n     actually runs the query and shows real timings and row counts.\n\n2. What to Look For:\n   - Full table scan (`Seq Scan` / MySQL `type = ALL`) on a large table: usually a missing or unusable index.\n   - Which index is chosen (`key` in MySQL) and whether it is an index seek or scan.\n   - Estimated vs actual rows: big gaps mean stale statistics.\n   - MySQL `Using filesort` / `Using temporary`: expensive sorting or temp tables.\n   - Join order and join type.\n\n3. Common Fixes:\n   - Add or reorder a (composite) index to match the WHERE/JOIN/ORDER BY columns.\n   - Avoid functions on indexed columns (`WHERE YEAR(created_at) = 2026` blocks the index).\n   - Avoid leading wildcards (`LIKE '%abc'`) and `SELECT *`.\n   - Update table statistics, rewrite subqueries as joins, paginate large results.\n\n4. Workflow:\n   - Run EXPLAIN -> find the costliest step -> change index/query -> re-run EXPLAIN to confirm."
+  },
+  {
+    "id": 152,
+    "topic": "DBMS",
+    "question": "What are Triggers? (stored procedures in one line)",
+    "answer": "1. Trigger:\n   - Code stored in the database that fires AUTOMATICALLY on a table event: INSERT, UPDATE, or DELETE.\n   - Timing: BEFORE or AFTER the event. Scope: per row or per statement.\n   - Can access `OLD` and `NEW` row values.\n\n2. Example (MySQL):\n   ```sql\n   CREATE TRIGGER trg_salary_audit\n   AFTER UPDATE ON employees\n   FOR EACH ROW\n   INSERT INTO salary_audit(emp_id, old_salary, new_salary)\n   VALUES (OLD.id, OLD.salary, NEW.salary);\n   ```\n\n3. Uses:\n   - Auditing changes, enforcing complex rules, maintaining derived/summary data.\n\n4. Drawbacks:\n   - Hidden logic that is hard to debug and test, adds write overhead, can cascade unexpectedly.\n   - Many teams prefer keeping such logic in the application layer.\n\n5. Stored Procedure (One Line):\n   - A named, precompiled block of SQL stored in the DB and called explicitly (`CALL proc()`),\n     unlike a trigger which runs automatically."
+  },
+  {
+    "id": 153,
+    "topic": "DBMS",
+    "question": "What is a CTE?",
+    "answer": "1. Definition:\n   - Common Table Expression: a temporary named result set defined with `WITH`, usable within the\n     single statement that follows it.\n\n2. Syntax and Example:\n   ```sql\n   WITH dept_avg AS (\n       SELECT department_id, AVG(salary) AS avg_sal\n       FROM employees\n       GROUP BY department_id\n   )\n   SELECT e.emp_name, e.salary\n   FROM employees e\n   JOIN dept_avg d ON e.department_id = d.department_id\n   WHERE e.salary > d.avg_sal;\n   ```\n\n3. Why Use It:\n   - Readability: Breaks a complex query into named steps instead of nested subqueries.\n   - Reuse: The same CTE can be referenced multiple times in the one query.\n   - Lives only for that statement; it is not stored like a view."
+  },
+  {
+    "id": 154,
+    "topic": "DBMS",
+    "question": "What is a Self Join and when do you use it?",
+    "answer": "1. Definition:\n   - A table joined with itself, using two different aliases to treat it as two separate tables.\n\n2. When to Use:\n   - Hierarchical data stored in one table (employee -> manager).\n   - Comparing rows within the same table (find pairs, find duplicates, compare to a related row).\n\n3. Example (Employees with Their Managers):\n   ```sql\n   SELECT e.emp_name AS employee, m.emp_name AS manager\n   FROM employees e\n   LEFT JOIN employees m ON e.manager_id = m.emp_id;\n   ```\n   - Use LEFT JOIN so top-level employees with no manager still appear.\n\n4. Example (Employees Earning More Than Their Manager):\n   ```sql\n   SELECT e.emp_name\n   FROM employees e\n   JOIN employees m ON e.manager_id = m.emp_id\n   WHERE e.salary > m.salary;\n   ```"
+  },
+  {
+    "id": 155,
+    "topic": "DBMS",
+    "question": "What are LAG() and LEAD() window functions?",
+    "answer": "1. Definition:\n   - Window functions that read a value from another row relative to the current row, without a self join.\n   - `LAG(col, offset, default)`: Value from a PREVIOUS row.\n   - `LEAD(col, offset, default)`: Value from a NEXT row.\n   - Offset defaults to 1. If no such row exists, the result is NULL unless a default is given.\n\n2. Example (Month-over-Month Revenue Change):\n   ```sql\n   SELECT month,\n          revenue,\n          LAG(revenue) OVER (ORDER BY month) AS prev_revenue,\n          revenue - LAG(revenue) OVER (ORDER BY month) AS change\n   FROM monthly_sales;\n   ```\n\n3. Notes:\n   - Use `PARTITION BY` to restart the comparison per group (e.g., per product).\n   - `ORDER BY` inside OVER() is required to define what \"previous\" and \"next\" mean."
+  },
+  {
+    "id": 156,
+    "topic": "DBMS",
+    "question": "What is Denormalization and when is it used?",
+    "answer": "1. Definition:\n   - Intentionally adding redundant data (or combining tables) to reduce joins and speed up reads,\n     at the cost of extra storage and harder writes.\n\n2. When It Is Used:\n   - Read-heavy systems, reporting/analytics, data warehouses, and cases where joins are too expensive.\n   - Also when data must be a snapshot in time (e.g., price stored on the order line even if the\n     product price changes later).\n\n3. Common Techniques:\n   - Duplicating a column (store `customer_name` in orders).\n   - Pre-computed columns (`order_total`).\n   - Summary tables or materialized views.\n\n4. Trade-offs:\n   - Risk of inconsistent data (update anomalies): redundant copies must be kept in sync by the\n     application, triggers, or batch jobs.\n   - Writes become slower and more complex.\n\n5. Guideline:\n   - Normalize first; denormalize only for a measured performance need."
+  },
+  {
+    "id": 157,
+    "topic": "DBMS",
+    "question": "Write queries to find and delete duplicate records.",
+    "answer": "1. Find Duplicates (by email):\n   ```sql\n   SELECT email, COUNT(*) AS cnt\n   FROM users\n   GROUP BY email\n   HAVING COUNT(*) > 1;\n   ```\n\n2. Delete Duplicates, Keep the Lowest id (ROW_NUMBER):\n   ```sql\n   DELETE FROM users\n   WHERE id IN (\n       SELECT id FROM (\n           SELECT id,\n                  ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) AS rn\n           FROM users\n       ) t\n       WHERE rn > 1\n   );\n   ```\n   - rn = 1 is the row kept; rn > 1 are the extra copies.\n\n3. Alternative (Self Join, MySQL Syntax):\n   ```sql\n   DELETE u1\n   FROM users u1\n   JOIN users u2 ON u1.email = u2.email AND u1.id > u2.id;\n   ```\n\n4. Notes:\n   - In MySQL, a plain `DELETE ... WHERE id NOT IN (SELECT MIN(id) FROM users GROUP BY email)`\n     on the same table errors out; wrap the subquery in a derived table.\n   - Prevent future duplicates with a UNIQUE constraint on the column."
+  },
+  {
+    "id": 158,
+    "topic": "Spring",
+    "question": "What is the difference between Spring and Spring Boot?",
+    "answer": "1. Spring Framework:\n   - Core framework providing IoC/DI, AOP, MVC, data access, transactions, etc.\n   - Requires manual configuration (XML or Java config), manual dependency version management,\n     and traditionally deployment as a WAR on an external server.\n\n2. Spring Boot:\n   - Built on top of Spring to remove boilerplate.\n   - Auto-configuration based on classpath, starter dependencies (`spring-boot-starter-web`),\n     embedded server (Tomcat), executable JAR, and production features (Actuator).\n\n3. Summary:\n   - Spring Boot does not replace Spring; it is an opinionated way to set up and run Spring applications quickly."
+  },
+  {
+    "id": 159,
+    "topic": "Spring",
+    "question": "What is AOP (Aspect, Advice, Pointcut, JoinPoint)?",
+    "answer": "1. Purpose:\n   - Aspect-Oriented Programming separates cross-cutting concerns (logging, transactions, security,\n     auditing) from business logic.\n\n2. Key Terms:\n   - Aspect: A class holding the cross-cutting logic (`@Aspect`).\n   - Advice: The action and WHEN it runs: `@Before`, `@After`, `@AfterReturning`, `@AfterThrowing`, `@Around`.\n   - Pointcut: An expression selecting WHICH methods the advice applies to\n     (e.g., `execution(* com.app.service.*.*(..))`).\n   - JoinPoint: A specific point in execution where advice can be applied (in Spring AOP, always a method execution).\n\n3. How Spring Implements It:\n   - Runtime proxies: JDK dynamic proxy (if the bean implements an interface) or CGLIB (subclass proxy).\n   - This is what powers `@Transactional`, `@Async`, and Spring Security method checks.\n\n4. Example:\n   ```java\n   @Aspect @Component\n   public class LogAspect {\n       @Around(\"execution(* com.app.service.*.*(..))\")\n       public Object log(ProceedingJoinPoint pjp) throws Throwable {\n           long start = System.currentTimeMillis();\n           Object result = pjp.proceed();\n           System.out.println(pjp.getSignature() + \" took \" + (System.currentTimeMillis() - start) + \"ms\");\n           return result;\n       }\n   }\n   ```"
+  },
+  {
+    "id": 160,
+    "topic": "Spring",
+    "question": "What are @Transactional propagation levels (REQUIRED vs REQUIRES_NEW), and why does it fail on self-invocation?",
+    "answer": "1. Propagation Levels:\n   - REQUIRED (default): Join the existing transaction if there is one; otherwise create a new one.\n   - REQUIRES_NEW: Always suspend any existing transaction and start a brand new independent one.\n     It commits or rolls back separately from the outer transaction.\n   - Others: SUPPORTS, MANDATORY, NOT_SUPPORTED, NEVER, NESTED (uses a savepoint).\n\n2. REQUIRED vs REQUIRES_NEW Example:\n   - Order saved with REQUIRED; an audit log method uses REQUIRES_NEW. If the order transaction\n     rolls back, the audit entry still stays committed.\n\n3. Why Self-Invocation Fails:\n   - `@Transactional` works through an AOP proxy around the bean.\n   - When a method calls another method of the SAME class (`this.save()`), the call goes directly to\n     the object and bypasses the proxy, so no transaction logic runs and the annotation is ignored.\n\n4. Fixes:\n   - Move the annotated method into a separate bean and inject it.\n   - Use `TransactionTemplate` for programmatic control.\n   - Inject a self-reference of the proxy, or switch to AspectJ weaving."
+  },
+  {
+    "id": 161,
+    "topic": "Spring",
+    "question": "How does Spring Data JPA work (derived queries, @Query, Pageable)?",
+    "answer": "1. Core Idea:\n   - You declare a repository interface (`extends JpaRepository<User, Long>`); Spring generates the\n     implementation at runtime. No boilerplate DAO code.\n\n2. Derived Queries:\n   - Spring parses the method name and builds the query:\n     `List<User> findByEmailAndStatus(String email, String status);`\n     `List<User> findByAgeGreaterThan(int age);`\n\n3. @Query:\n   - Custom JPQL (or native SQL with `nativeQuery = true`) for complex cases:\n     ```java\n     @Query(\"SELECT u FROM User u WHERE u.city = :city\")\n     List<User> findByCity(@Param(\"city\") String city);\n     ```\n   - Update/delete queries need `@Modifying` (and a transaction).\n\n4. Pageable:\n   - Pass a `Pageable` to get paginated, sorted results:\n     `Page<User> findByStatus(String status, Pageable pageable);`\n     `repo.findByStatus(\"ACTIVE\", PageRequest.of(0, 10, Sort.by(\"name\")));`\n   - `Page` also runs a count query for total elements; `Slice` skips the count (cheaper)."
+  },
+  {
+    "id": 162,
+    "topic": "Spring",
+    "question": "How does @OneToMany / @ManyToOne work and what does mappedBy do?",
+    "answer": "1. Relationship:\n   - One Customer has many Orders. The foreign key column (`customer_id`) lives in the orders table.\n\n2. Owning Side (@ManyToOne):\n   - The side that holds the foreign key; it controls the database mapping.\n   ```java\n   @Entity\n   public class Order {\n       @ManyToOne\n       @JoinColumn(name = \"customer_id\")\n       private Customer customer;\n   }\n   ```\n\n3. Inverse Side (@OneToMany with mappedBy):\n   ```java\n   @Entity\n   public class Customer {\n       @OneToMany(mappedBy = \"customer\", cascade = CascadeType.ALL)\n       private List<Order> orders = new ArrayList<>();\n   }\n   ```\n   - `mappedBy = \"customer\"` tells JPA the relationship is already mapped by the `customer` field in\n     `Order`, so do not create a separate foreign key or join table.\n   - Without `mappedBy`, a @OneToMany creates an extra join table by default.\n\n4. Notes:\n   - Keep both sides in sync (set `order.setCustomer(c)` when adding to the list).\n   - Defaults: @OneToMany is LAZY; @ManyToOne is EAGER."
+  },
+  {
+    "id": 163,
+    "topic": "Spring",
+    "question": "What are the JPA Entity lifecycle states (Transient, Persistent, Detached, Removed)?",
+    "answer": "1. Transient (New):\n   - Created with `new`; not associated with a persistence context and has no database row.\n\n2. Persistent (Managed):\n   - Tracked by the persistence context (EntityManager/Session), after `persist()` or being loaded\n     via `find()`.\n   - Changes are detected automatically (dirty checking) and flushed to the DB at commit.\n\n3. Detached:\n   - Was managed, but the session closed or `detach()` was called. Changes are no longer tracked.\n   - Reattach with `merge()`.\n\n4. Removed:\n   - Marked for deletion via `remove()`; the row is deleted on flush/commit."
+  },
+  {
+    "id": 164,
+    "topic": "Spring",
+    "question": "Why use DTOs instead of exposing Entities?",
+    "answer": "1. Security:\n   - Entities may contain sensitive fields (password hash, internal flags). A DTO exposes only what is intended.\n   - Prevents mass assignment: clients cannot set fields like `role` or `id` by sending extra JSON.\n\n2. Decoupling:\n   - API contract stays stable even if the database schema or entity structure changes.\n\n3. Avoid Persistence Problems:\n   - Serializing entities can trigger lazy loading (`LazyInitializationException`) or infinite\n     recursion in bidirectional relationships.\n\n4. Tailored Payloads:\n   - Different DTOs per use case (list view vs detail view, create vs update) with separate validation rules.\n\n5. Mapping:\n   - Manual mapping, MapStruct, or ModelMapper. Java `record` types work well as DTOs."
+  },
+  {
+    "id": 165,
+    "topic": "Spring",
+    "question": "How do microservices call each other (RestTemplate vs Feign)?",
+    "answer": "1. RestTemplate:\n   - Synchronous HTTP client. You build the URL, call `getForObject()` / `exchange()`, and map the\n     response yourself. More boilerplate.\n   - Now in maintenance mode; Spring recommends `RestClient` (Spring 6.1+) or `WebClient`.\n\n2. OpenFeign (Declarative Client):\n   - You write an interface and Spring generates the implementation:\n     ```java\n     @FeignClient(name = \"inventory-service\")\n     public interface InventoryClient {\n         @GetMapping(\"/inventory/{id}\")\n         Stock getStock(@PathVariable Long id);\n     }\n     ```\n   - Resolves the service name through service discovery (Eureka), load-balances across instances,\n     and integrates with Resilience4j (circuit breaker, retry, timeout).\n\n3. Other Style:\n   - Asynchronous communication through a message broker (Kafka/RabbitMQ) for decoupled event-driven flows."
+  },
+  {
+    "id": 166,
+    "topic": "Spring",
+    "question": "How does @Scheduled work?",
+    "answer": "1. Setup:\n   - Add `@EnableScheduling` on a configuration class, then annotate a no-argument void method\n     of a Spring bean with `@Scheduled`.\n\n2. Trigger Options:\n   - `fixedRate = 5000`: Runs every 5 seconds measured from the START of the previous run.\n   - `fixedDelay = 5000`: Waits 5 seconds after the previous run FINISHES.\n   - `initialDelay`: Delay before the first run.\n   - `cron = \"0 0 2 * * *\"`: Spring cron has 6 fields (second, minute, hour, day, month, weekday);\n     this runs daily at 2:00 AM.\n\n3. Pitfalls:\n   - By default there is a single scheduler thread, so a slow task delays other scheduled tasks.\n     Configure the pool size (`spring.task.scheduling.pool.size`).\n   - With multiple application instances, the job runs on EVERY instance (duplicate execution).\n     Use ShedLock or Quartz clustering to ensure only one instance runs it."
+  },
+  {
+    "id": 167,
+    "topic": "System Design",
+    "question": "What is the Saga pattern? (2PC as the contrast)",
+    "answer": "1. Saga Pattern:\n   - Manages a distributed transaction across microservices as a sequence of LOCAL transactions.\n     If one step fails, previously completed steps are undone by COMPENSATING transactions.\n   - Example: Create Order -> Reserve Inventory -> Charge Payment. If payment fails, release\n     inventory and cancel the order.\n\n2. Two Styles:\n   - Choreography: Services react to each other's events (e.g., via Kafka); no central coordinator.\n     Simple for few steps, but harder to track as it grows.\n   - Orchestration: A central orchestrator tells each service what to do next and triggers compensations.\n     Clearer flow, but the orchestrator is an extra component.\n\n3. Contrast with 2PC (Two-Phase Commit):\n   - 2PC: A coordinator asks all participants to \"prepare\" then \"commit\"; locks are held across services,\n     it blocks if the coordinator fails, and availability suffers.\n   - Saga: No cross-service locks, higher availability, but only eventual consistency and no isolation\n     between steps.\n\n4. Requirements:\n   - Compensations and steps must be idempotent."
+  },
+  {
+    "id": 168,
+    "topic": "System Design",
+    "question": "What is the Transactional Outbox pattern?",
+    "answer": "1. Problem (Dual Write):\n   - A service must update its database AND publish an event to Kafka. These are two separate systems,\n     so one can succeed while the other fails, leaving them inconsistent.\n\n2. Solution:\n   - In ONE local database transaction, write the business data and also insert the event into an\n     `outbox` table. Both commit or roll back together.\n   - A separate relay process reads the outbox and publishes to the broker, then marks the row as sent:\n     * Polling publisher: Periodically queries unsent rows.\n     * CDC (Change Data Capture): Tools like Debezium read the DB transaction log and stream outbox rows.\n\n3. Guarantee:\n   - At-least-once delivery (relay may resend after a crash), so consumers must be idempotent\n     (e.g., deduplicate by event ID)."
+  },
+  {
+    "id": 169,
+    "topic": "System Design",
+    "question": "What are CQRS and Event Sourcing?",
+    "answer": "1. CQRS (Command Query Responsibility Segregation):\n   - Separate the write model (commands that change state) from the read model (queries).\n   - The read side can be a denormalized, query-optimized store (even a different database), updated\n     from the write side via events.\n   - Benefit: Scale and optimize reads and writes independently. Cost: eventual consistency and more complexity.\n\n2. Event Sourcing:\n   - Instead of storing only the current state, store every change as an immutable event in an\n     append-only log (e.g., AccountOpened, MoneyDeposited, MoneyWithdrawn).\n   - Current state is rebuilt by replaying events; snapshots speed this up.\n   - Benefits: Full audit trail, ability to replay and see state at any past time.\n   - Costs: Event schema evolution, complexity, rebuilding state.\n\n3. Relationship:\n   - Often used together (the event store feeds the read models), but each can be used independently."
+  },
+  {
+    "id": 170,
+    "topic": "System Design",
+    "question": "What is Service Discovery (client-side vs server-side)?",
+    "answer": "1. Problem:\n   - In microservices, instances start, stop, and scale dynamically, so IPs and ports keep changing.\n     Hardcoding addresses does not work.\n\n2. Service Registry:\n   - A database of service name -> live instances. Services register on startup and send heartbeats;\n     dead instances are removed (e.g., Eureka, Consul).\n\n3. Client-Side Discovery:\n   - The calling client queries the registry, gets the list of instances, and picks one itself\n     (load balancing in the client).\n   - Example: Spring Cloud Eureka + Spring Cloud LoadBalancer / Feign.\n   - Pro: No extra network hop. Con: Discovery logic needed in every client.\n\n4. Server-Side Discovery:\n   - The client calls a fixed load balancer/router address, which queries the registry and forwards the request.\n   - Examples: AWS ALB, Kubernetes Service (DNS name + kube-proxy).\n   - Pro: Clients stay simple. Con: Extra hop and one more component to manage."
+  },
+  {
+    "id": 171,
+    "topic": "System Design",
+    "question": "What is Consistent Hashing?",
+    "answer": "1. Problem with Simple Hashing:\n   - `server = hash(key) % N`. When N changes (a server is added or removed), almost ALL keys map to\n     a different server, causing massive cache misses or data movement.\n\n2. Consistent Hashing:\n   - Hash both servers and keys onto a circular ring (e.g., 0 to 2^32 - 1).\n   - A key is stored on the first server found moving clockwise from the key's position.\n   - Adding or removing a server only affects the keys in the adjacent range (about K/N keys move),\n     not everything.\n\n3. Virtual Nodes:\n   - Each physical server is placed at many points on the ring.\n   - Gives a more even load distribution and lets stronger machines take more virtual nodes.\n\n4. Used In:\n   - Distributed caches, Cassandra, DynamoDB, and load balancers."
+  },
+  {
+    "id": 172,
+    "topic": "System Design",
+    "question": "What are Cache Stampede, Cache Penetration, and Cache Avalanche?",
+    "answer": "1. Cache Stampede (Thundering Herd / Hot Key Expiry):\n   - A very popular key expires, and many concurrent requests all miss the cache and hit the database\n     at once.\n   - Fixes: Per-key mutex/lock so only one request rebuilds the value, refresh before expiry,\n     logical expiry with background refresh.\n\n2. Cache Penetration:\n   - Requests for keys that do NOT exist anywhere (invalid IDs, attackers). They always miss the\n     cache and always hit the database.\n   - Fixes: Cache the \"not found\" result with a short TTL, Bloom filter in front, input validation.\n\n3. Cache Avalanche:\n   - Many keys expire at the same moment, or the cache node goes down, so a flood of requests hits the database.\n   - Fixes: Add random jitter to TTLs, run the cache in a replicated/clustered setup, rate limiting\n     and circuit breakers to protect the DB."
+  },
+  {
+    "id": 173,
+    "topic": "System Design",
+    "question": "How does LRU cache eviction work (design an LRU cache)?",
+    "answer": "1. Idea:\n   - When the cache is full, evict the Least Recently Used entry.\n\n2. Design for O(1) get and put:\n   - HashMap<key, Node>: Instant lookup.\n   - Doubly linked list: Head = most recently used, Tail = least recently used.\n   - get(key): Find node via map, move it to the head, return value.\n   - put(key, value): If key exists, update and move to head. Else insert at head; if size exceeds\n     capacity, remove the tail node and its map entry.\n\n3. Quick Java Version (LinkedHashMap with access order):\n   ```java\n   class LRUCache<K, V> extends LinkedHashMap<K, V> {\n       private final int capacity;\n       LRUCache(int capacity) {\n           super(capacity, 0.75f, true);      // true = access order\n           this.capacity = capacity;\n       }\n       @Override\n       protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n           return size() > capacity;\n       }\n   }\n   ```\n\n4. Notes:\n   - Not thread-safe; wrap or synchronize for concurrent use.\n   - Redis supports LRU-style eviction via `maxmemory-policy allkeys-lru`."
+  },
+  {
+    "id": 174,
+    "topic": "System Design",
+    "question": "How do you implement a Distributed Lock (Redis)?",
+    "answer": "1. Acquire:\n   - `SET lock:resource <unique-token> NX PX 30000`\n   - NX = set only if the key does not exist (so only one client wins). PX = auto-expire in 30000 ms\n     so a crashed holder does not keep the lock forever.\n\n2. Release (Only If You Own It):\n   - Compare the stored token with yours, then delete, atomically via a Lua script:\n     ```lua\n     if redis.call(\"get\", KEYS[1]) == ARGV[1] then\n         return redis.call(\"del\", KEYS[1])\n     else\n         return 0\n     end\n     ```\n   - Without the token check, a client could delete a lock that now belongs to someone else.\n\n3. Pitfalls:\n   - If the work takes longer than the TTL, the lock expires and another client enters. Use a\n     watchdog that renews the lock (Redisson does this).\n   - Redis replication is asynchronous, so a lock can be lost on failover (Redlock addresses this\n     but is debated). For strict correctness, use fencing tokens, or ZooKeeper/etcd, or database constraints.\n\n4. Java:\n   - Redisson `RLock lock = redisson.getLock(\"order:42\"); lock.lock(); try {...} finally { lock.unlock(); }`"
+  },
+  {
+    "id": 175,
+    "topic": "System Design",
+    "question": "How does Kafka work internally (partitions, consumer groups, offsets)?",
+    "answer": "1. Topics and Partitions:\n   - A topic is split into partitions. Each partition is an ordered, append-only log on disk.\n   - Each message in a partition has a sequential offset.\n   - Ordering is guaranteed only WITHIN a partition. Messages with the same key go to the same partition\n     (hash of key), preserving per-key order.\n\n2. Brokers and Replication:\n   - Partitions are spread across brokers. Each partition has one leader (handles reads/writes) and\n     follower replicas (the in-sync replicas, ISR) for fault tolerance.\n\n3. Consumer Groups:\n   - Consumers sharing a group.id split the partitions: each partition is read by exactly ONE consumer\n     in the group, so max parallelism = number of partitions.\n   - Different groups each receive the full stream independently.\n   - Rebalancing reassigns partitions when consumers join or leave.\n\n4. Offsets:\n   - The consumer tracks its position per partition and commits offsets (stored in the internal\n     `__consumer_offsets` topic).\n   - Messages are retained by time/size policy, not deleted on consumption, so consumers can rewind and replay."
+  },
+  {
+    "id": 176,
+    "topic": "System Design",
+    "question": "What are Kafka delivery semantics (at-most-once, at-least-once, exactly-once)?",
+    "answer": "1. At-Most-Once:\n   - Commit the offset BEFORE processing. If processing fails, the message is lost; never duplicated.\n\n2. At-Least-Once (Most Common):\n   - Process FIRST, then commit the offset. If a crash happens between the two, the message is\n     redelivered, causing duplicates. Consumers must be idempotent.\n   - Producer side: `acks=all` plus retries.\n\n3. Exactly-Once:\n   - Idempotent producer (`enable.idempotence=true`): broker discards duplicate sends using producer ID\n     and sequence numbers.\n   - Transactions: Atomically write to multiple partitions and commit consumer offsets together;\n     consumers use `isolation.level=read_committed`.\n   - Kafka Streams: `processing.guarantee=exactly_once_v2`.\n   - Scope: Applies to Kafka read-process-write flows. External side effects (DB writes, emails)\n     still need idempotency."
+  },
+  {
+    "id": 177,
+    "topic": "System Design",
+    "question": "What is Eventual Consistency?",
+    "answer": "1. Definition:\n   - If no new updates are made, all replicas will eventually converge to the same value.\n     Until then, reads may return stale data.\n\n2. Why It Exists:\n   - Strong consistency across replicas costs latency and availability (see CAP theorem). Eventual\n     consistency favors availability and speed.\n\n3. Examples:\n   - DNS propagation, Cassandra/DynamoDB replicas, social media like counts, and microservices\n     synchronized through events.\n\n4. Mechanisms to Converge:\n   - Asynchronous replication, read repair, anti-entropy background sync, conflict resolution\n     (last-write-wins, vector clocks).\n\n5. Design Implications:\n   - Make operations idempotent, tolerate stale reads in the UI, and avoid eventual consistency\n     for things like account balances where it is not acceptable."
+  },
+  {
+    "id": 178,
+    "topic": "System Design",
+    "question": "What is a Bloom Filter?",
+    "answer": "1. Definition:\n   - A space-efficient probabilistic data structure to test whether an element is in a set.\n   - Made of a bit array of m bits and k hash functions.\n\n2. How It Works:\n   - Add: Hash the element with k functions and set those k bit positions to 1.\n   - Check: Hash the element again. If ANY bit is 0, it is DEFINITELY NOT in the set.\n     If all bits are 1, it is POSSIBLY in the set.\n\n3. Properties:\n   - False positives are possible; false negatives are never possible.\n   - Standard version does not support deletion (counting Bloom filters do).\n   - The false-positive rate is tuned by bit array size and number of hash functions.\n\n4. Uses:\n   - Prevent cache penetration (skip DB lookups for keys that definitely do not exist), crawler\n     \"already visited URL\" checks, and Cassandra/HBase checks to avoid reading disk files that cannot\n     contain a key."
+  },
+  {
+    "id": 179,
+    "topic": "System Design",
+    "question": "What is Distributed Tracing and Observability (logs, metrics, traces)?",
+    "answer": "1. Observability:\n   - The ability to understand a system's internal state from the data it emits. Three pillars:\n     * Logs: Discrete timestamped event records (use structured JSON logs).\n     * Metrics: Numeric time series (request rate, error rate, latency, CPU); e.g., Prometheus + Grafana.\n     * Traces: The end-to-end path of one request across multiple services.\n\n2. Distributed Tracing:\n   - Each request gets a Trace ID. Each unit of work (service call, DB query) is a Span with its own\n     Span ID and a parent Span ID, forming a tree with timings.\n   - The trace context is propagated between services through headers (W3C `traceparent`) or message headers.\n   - Shows where time is spent and which service failed.\n\n3. Tools:\n   - OpenTelemetry (standard instrumentation), Jaeger, Zipkin. In Spring Boot 3: Micrometer Tracing\n     (replaced Spring Cloud Sleuth).\n\n4. Log Correlation:\n   - Put the Trace ID in every log line (via MDC) so you can find all logs for one request."
+  },
+  {
+    "id": 180,
+    "topic": "System Design",
+    "question": "What is Horizontal vs Vertical Scaling?",
+    "answer": "1. Vertical Scaling (Scale Up):\n   - Add more CPU/RAM to the same machine.\n   - Pros: Simple, no code changes. Cons: Hardware ceiling, single point of failure, often downtime to\n     upgrade, cost rises steeply.\n\n2. Horizontal Scaling (Scale Out):\n   - Add more machines and spread load across them.\n   - Pros: Near-unlimited growth, fault tolerance. Cons: Needs a load balancer, stateless services,\n     and data partitioning; adds distributed-system complexity.\n\n3. Typical Strategy:\n   - Application tier: scale out horizontally (keep services stateless).\n   - Database: scale up first, then add read replicas, then caching, then sharding."
+  },
+  {
+    "id": 181,
+    "topic": "System Design",
+    "question": "How would you design a URL Shortener?",
+    "answer": "1. Requirements:\n   - Create a short URL from a long one; redirect fast when the short URL is opened.\n   - Read-heavy (far more redirects than creations), low latency, short codes must be unique,\n     optional expiry and click analytics.\n\n2. APIs:\n   - `POST /shorten {longUrl}` -> returns `https://sho.rt/aZ3x9Q1`\n   - `GET /{code}` -> HTTP redirect to the long URL.\n\n3. Generating the Short Code:\n   - Base62 (a-z, A-Z, 0-9) encode a unique numeric ID. 7 characters give 62^7 (about 3.5 trillion) combinations.\n   - ID source: Distributed ID generator (Snowflake-style), or counter ranges pre-allocated to each server.\n   - Alternative: Hash the long URL and take the first characters, but collisions must be handled.\n\n4. Storage:\n   - Key-value mapping `code -> longUrl` (+ createdAt, expiry). A NoSQL store or an SQL table indexed by code.\n\n5. Read Path (Optimization):\n   - Redis cache in front of the DB for hot codes; stateless app servers behind a load balancer.\n\n6. Redirect Type:\n   - 301 (permanent): Browsers cache it, so less load but you lose click analytics.\n   - 302 (temporary): Every click hits your server, enabling analytics.\n\n7. Scaling:\n   - Shard the DB by code, add read replicas, rate limit creation, and expire/clean old links."
+  },
+  {
+    "id": 182,
+    "topic": "System Design",
+    "question": "What are the Sliding Window Log and Sliding Window Counter rate-limiting algorithms?",
+    "answer": "1. Sliding Window Log:\n   - Store the timestamp of every request per client (e.g., Redis sorted set).\n   - On a new request: remove timestamps older than the window, count what remains. If count < limit,\n     allow and add the new timestamp; otherwise reject (HTTP 429).\n   - Pros: Exact and accurate. Cons: High memory (stores every request in the window).\n\n2. Sliding Window Counter:\n   - Hybrid of fixed-window counters. Keep counts for the current and previous window and weight the\n     previous one by how much of it still overlaps the sliding window:\n     estimated = current_count + previous_count x (overlap fraction of previous window).\n   - Example: Limit 100/min, 30% into the current minute, previous = 80, current = 20:\n     20 + 80 x 0.70 = 76, so the request is allowed.\n   - Pros: Low memory (two counters per client) and smooths the burst problem at fixed-window boundaries.\n     Cons: An approximation."
+  },
+  {
+    "id": 183,
+    "topic": "DevOps",
+    "question": "What is the difference between Docker and a Virtual Machine?",
+    "answer": "1. Virtual Machine:\n   - A hypervisor virtualizes hardware, and each VM runs a full guest OS with its own kernel.\n   - Heavy (GBs), slow to boot (minutes), strong isolation.\n\n2. Docker Container:\n   - Virtualizes at the OS level: containers share the HOST's kernel and are isolated using\n     Linux namespaces and cgroups.\n   - Lightweight (MBs), starts in seconds, high density per machine.\n   - Isolation is weaker than a VM since the kernel is shared.\n\n3. Key Point:\n   - A container packages the app with its dependencies so it runs the same everywhere, without\n     bundling a whole operating system.\n   - (On Windows/Mac, Docker runs containers inside a lightweight Linux VM.)"
+  },
+  {
+    "id": 184,
+    "topic": "DevOps",
+    "question": "What is the difference between a Docker Image and a Container, and what does a Dockerfile do?",
+    "answer": "1. Image:\n   - A read-only, layered template containing the app, runtime, libraries, and configuration.\n\n2. Container:\n   - A running instance of an image, with a thin writable layer on top. It is ephemeral.\n   - Many containers can run from one image. (Analogy: Image = class, Container = object.)\n\n3. Dockerfile:\n   - A text file of instructions to build an image. Each instruction creates a cached layer.\n   - Common instructions: `FROM`, `WORKDIR`, `COPY`, `RUN`, `ENV`, `EXPOSE`, `ENTRYPOINT`/`CMD`.\n\n4. Example (Spring Boot):\n   ```\n   FROM eclipse-temurin:21-jre\n   WORKDIR /app\n   COPY target/app.jar app.jar\n   EXPOSE 8080\n   ENTRYPOINT [\"java\", \"-jar\", \"app.jar\"]\n   ```\n   - Build: `docker build -t myapp:1.0 .`\n   - Run: `docker run -p 8080:8080 myapp:1.0`"
+  },
+  {
+    "id": 185,
+    "topic": "DevOps",
+    "question": "What is Kubernetes (Pod, Deployment, Service)?",
+    "answer": "1. Kubernetes:\n   - A container orchestration platform that schedules containers across a cluster, scales them,\n     restarts failed ones (self-healing), and performs rolling updates.\n   - Works on a desired-state model: you declare what you want, and controllers keep reality matching it.\n\n2. Pod:\n   - The smallest deployable unit: one or more containers sharing the same IP address and storage.\n   - Pods are ephemeral; when one dies, its replacement gets a new IP.\n\n3. Deployment:\n   - Declares the desired state (container image, number of replicas) and manages Pods through a ReplicaSet.\n   - Provides rolling updates and rollbacks.\n\n4. Service:\n   - A stable virtual IP and DNS name that load-balances traffic across the matching Pods (selected by labels).\n   - Types: ClusterIP (internal), NodePort, LoadBalancer.\n\n5. Related (One Line):\n   - ConfigMap/Secret hold configuration; Ingress routes external HTTP traffic to Services."
+  },
+  {
+    "id": 186,
+    "topic": "DevOps",
+    "question": "What is CI/CD?",
+    "answer": "1. CI (Continuous Integration):\n   - Developers merge code into a shared branch frequently; every push triggers an automated build\n     and tests (unit tests, static analysis) to catch integration bugs early.\n\n2. CD (Continuous Delivery / Continuous Deployment):\n   - Continuous Delivery: Every change that passes the pipeline is packaged and ready to release;\n     the production deploy needs a manual approval.\n   - Continuous Deployment: Every passing change is deployed to production automatically.\n\n3. Typical Pipeline Stages:\n   - Checkout -> Build (Maven/Gradle) -> Unit tests -> Static analysis -> Build Docker image ->\n     Push to registry -> Deploy to staging -> Deploy to production.\n\n4. Tools and Strategies:\n   - Tools: GitHub Actions, Jenkins, GitLab CI.\n   - Deployment strategies: Rolling, Blue-Green, Canary."
+  },
+  {
+    "id": 187,
+    "topic": "DevOps",
+    "question": "What is the difference between Git Merge and Git Rebase?",
+    "answer": "1. Git Merge:\n   - Combines two branches by creating a new merge commit with two parents.\n   - Preserves the exact history and is non-destructive, but the history can become branched and noisy.\n   - `git checkout main && git merge feature`\n\n2. Git Rebase:\n   - Replays your branch's commits on top of the target branch tip, creating NEW commits (new hashes).\n   - Produces a clean, linear history, but REWRITES history.\n   - `git checkout feature && git rebase main`\n\n3. Golden Rule:\n   - Never rebase commits that are already pushed and shared with others; it requires a force push\n     and breaks their copies.\n\n4. Typical Usage:\n   - Rebase your local feature branch to stay updated with main before opening a PR.\n   - Merge (or squash-merge) to integrate the feature into main."
   }
 ]
